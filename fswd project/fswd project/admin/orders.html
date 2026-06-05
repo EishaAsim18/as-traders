@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Orders — A &amp; S Traders Admin</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link href="../assets/css/admin.css" rel="stylesheet" />
+  </head>
+  <body class="admin-body">
+    <aside class="admin-sidebar">
+      <div class="brand">
+        <div class="brand-logo">A&amp;S</div>
+        <div class="brand-title">A &amp; S Traders</div>
+        <div class="brand-sub">Administration · Multan</div>
+        <div class="brand-brands">Faisal · Sonex · Porta · Dadex</div>
+      </div>
+      <nav class="nav flex-column flex-grow-1">
+        <div class="nav-section">Operations</div>
+        <a class="nav-link" href="index.html">Dashboard</a>
+        <a class="nav-link active" href="orders.html">Orders</a>
+        <a class="nav-link" href="customers.html">Customers</a>
+        <a class="nav-link" href="billing.html">Invoices</a>
+        <a class="nav-link" href="inventory.html">Inventory</a>
+        <div class="nav-section mt-3">Settings</div>
+        <a class="nav-link" href="account.html">My account</a>
+      </nav>
+      <div class="px-3 mt-auto pt-3 border-top border-secondary border-opacity-25">
+        <button type="button" class="btn btn-outline-light btn-sm w-100 js-logout">Logout</button>
+      </div>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="d-flex align-items-center gap-3">
+          <button class="btn btn-light d-lg-none border" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileNav">
+            Menu
+          </button>
+          <div>
+            <p class="topbar-meta mb-0" id="todayDate">—</p>
+            <p class="topbar-title mb-0" id="adminGreeting">Hello, Admin</p>
+          </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge rounded-pill text-bg-light border small">Live orders</span>
+          <button type="button" class="btn btn-outline-secondary btn-sm js-logout">Logout</button>
+        </div>
+      </header>
+
+      <div class="p-4 p-lg-5">
+        <div class="page-help">
+          <strong>Order management:</strong> View all orders · Accept / Reject · Update delivery status.
+          <strong>COD:</strong> PDF shows <strong>UNPAID</strong> until admin marks Paid. Delivery reports cash at
+          <a href="/customer/collect-cod.html" target="_blank" rel="noopener">collect-cod</a> — you confirm in the order.
+          Walk-in sales: <a href="billing.html">Invoices</a>.
+        </div>
+
+        <div class="table-card">
+          <div class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              <div class="fw-bold">All orders</div>
+              <div class="small text-muted"><span id="ordersCount">0</span> orders</div>
+            </div>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+              <select class="form-select form-select-sm w-auto" id="filterOrderStatus">
+                <option value="">All statuses</option>
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="shipped">Shipped</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+              <select class="form-select form-select-sm w-auto" id="filterOrderSource">
+                <option value="">All types</option>
+                <option value="online">Online</option>
+                <option value="walk-in">Walk-in</option>
+              </select>
+              <select class="form-select form-select-sm w-auto" id="filterPaymentStatus">
+                <option value="">All payments</option>
+                <option value="unpaid">Unpaid</option>
+                <option value="partial">Partial</option>
+                <option value="paid">Paid</option>
+              </select>
+              <select class="form-select form-select-sm w-auto" id="filterCodReport">
+                <option value="">All pay methods</option>
+                <option value="cod">COD only</option>
+                <option value="cod_reported">COD — cash reported</option>
+              </select>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="btnClearOrderFilters">
+                Clear filters
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" onclick="loadOrders().catch(showError)">
+                Refresh
+              </button>
+            </div>
+          </div>
+          <div id="ordersEmpty" class="p-4 text-muted d-none">
+            <span id="ordersEmptyFiltered" class="d-none">
+              No orders match these filters.
+              <button type="button" class="btn btn-link btn-sm p-0 align-baseline" id="ordersEmptyClearFilters">
+                Clear filters
+              </button>
+            </span>
+            <span id="ordersEmptyNone">
+              No orders yet. Place a test order from
+              <a href="/customer/cart.html" target="_blank" rel="noopener">customer checkout</a>.
+            </span>
+          </div>
+          <div class="table-responsive">
+            <table class="table mb-0">
+              <thead>
+                <tr>
+                  <th>Order</th>
+                  <th>Date</th>
+                  <th>Customer</th>
+                  <th>City</th>
+                  <th>Items</th>
+                  <th>Amount</th>
+                  <th>Type</th>
+                  <th>Pay method</th>
+                  <th>Status</th>
+                  <th>Paid?</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="ordersTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div class="modal fade" id="orderDetailModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <div>
+              <h5 class="modal-title mb-0" id="modalOrderNumber">—</h5>
+              <div class="small text-muted" id="modalOrderDate">—</div>
+            </div>
+            <div class="d-flex flex-column align-items-end gap-1">
+              <div id="modalOrderSource"></div>
+              <div id="modalOrderStatus"></div>
+              <div id="modalOrderPayment"></div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div id="modalRejectReason" class="alert alert-danger small d-none mb-3"></div>
+            <div id="modalInvoiceInfo" class="alert alert-light border small d-none mb-3"></div>
+            <div id="modalCodReport" class="alert alert-warning border-warning small d-none mb-3">
+              <div class="fw-semibold mb-1">COD — delivery reported cash collected</div>
+              <p class="mb-2" id="modalCodReportText">—</p>
+              <button type="button" class="btn btn-sm btn-success" id="btnConfirmCodPayment">
+                Confirm payment received (mark Paid)
+              </button>
+            </div>
+
+            <p class="small mb-3">
+              <span class="text-muted">Payment method:</span>
+              <strong id="modalOrderPayMethod">—</strong>
+            </p>
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <div class="small text-muted">Customer</div>
+                <div class="fw-semibold" id="modalCustomerName">—</div>
+                <div class="small" id="modalCustomerPhone">—</div>
+                <div class="small text-muted" id="modalCustomerEmail">—</div>
+              </div>
+              <div class="col-md-6">
+                <div class="small text-muted">Delivery</div>
+                <div id="modalCity">—</div>
+                <div class="small" id="modalAddress">—</div>
+                <div class="small text-muted mt-1" id="modalDeliveryNotes">—</div>
+              </div>
+            </div>
+
+            <div class="fw-semibold mb-2">Order items</div>
+            <div class="table-responsive mb-3">
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>Unit</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody id="modalItemsBody"></tbody>
+              </table>
+            </div>
+            <div class="d-flex justify-content-end gap-4 small mb-4 flex-wrap">
+              <div>Subtotal: <span id="modalSubtotal">—</span></div>
+              <div>Delivery: <span id="modalDeliveryFee">—</span></div>
+              <div class="fw-bold">Total: <span id="modalTotal">—</span></div>
+            </div>
+
+            <div class="border rounded-4 p-3 mb-3">
+              <div class="fw-semibold small mb-2">Delivery status</div>
+              <div class="d-flex flex-wrap gap-2 align-items-center">
+                <button type="button" class="btn btn-sm btn-success" id="btnAcceptOrder">Accept order</button>
+                <button type="button" class="btn btn-sm btn-outline-danger" id="btnRejectOrder">Reject</button>
+                <select class="form-select form-select-sm w-auto" id="modalStatusSelect"></select>
+                <button type="button" class="btn btn-sm btn-admin-primary" id="btnUpdateStatus">Update status</button>
+              </div>
+            </div>
+
+            <div class="border rounded-4 p-3 mb-3">
+              <div class="fw-semibold small mb-2">Invoice</div>
+              <div class="row g-2 align-items-end">
+                <div class="col-sm-4">
+                  <label class="form-label small mb-0" for="modalInvoiceDiscount">Trade discount (PKR)</label>
+                  <input
+                    type="number"
+                    class="form-control form-control-sm"
+                    id="modalInvoiceDiscount"
+                    min="0"
+                    step="100"
+                    value="0"
+                  />
+                  <div class="form-text small">Deducted from invoice total.</div>
+                </div>
+                <div class="col-sm-8 d-flex flex-wrap gap-2 align-items-center">
+                  <button type="button" class="btn btn-sm btn-outline-primary" id="btnGenerateInvoice">
+                    Generate invoice
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-admin-primary d-none"
+                    id="btnDownloadOrderPdf"
+                    title="Print or send on WhatsApp for delivery"
+                  >
+                    Download PDF (bill + delivery)
+                  </button>
+                  <span class="small text-muted">Also in Billing → Invoices</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="border rounded-4 p-3">
+              <div class="fw-semibold small mb-2">Track payment</div>
+              <p class="small text-muted mb-2">Payment method on this order:</p>
+              <div id="modalPaymentPicker" class="mb-3"></div>
+              <div class="border rounded-3 p-3 bg-light mb-3" id="modalPaymentProofSection">
+                <div class="fw-semibold small mb-2">Customer payment screenshot</div>
+                <div id="modalPaymentProofEmpty" class="small text-muted mb-2">
+                  No screenshot yet — customer uploads after checkout (bank / JazzCash / Easypaisa).
+                </div>
+                <a
+                  href="#"
+                  target="_blank"
+                  rel="noopener"
+                  id="modalPaymentProofLink"
+                  class="d-none mb-2 d-inline-block"
+                >
+                  <img
+                    id="modalPaymentProofImg"
+                    alt="Payment proof"
+                    class="payment-proof-thumb d-block mb-2"
+                  />
+                  Open full image
+                </a>
+                <button type="button" class="btn btn-sm btn-admin-primary d-none" id="btnConfirmPaymentProof">
+                  Confirm payment received
+                </button>
+                <p id="modalPaymentProofPaid" class="small text-success mb-0 d-none">Payment confirmed — status is Paid.</p>
+              </div>
+              <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                  <label class="form-label small">Payment status</label>
+                  <select class="form-select form-select-sm" id="modalPaymentStatus">
+                    <option value="unpaid">Unpaid</option>
+                    <option value="partial">Partial</option>
+                    <option value="paid">Paid</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small">Amount received (PKR)</label>
+                  <input type="number" class="form-control form-control-sm" id="modalPaidAmount" min="0" />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small">Note</label>
+                  <input type="text" class="form-control form-control-sm" id="modalPaymentNote" placeholder="Cash, bank…" />
+                </div>
+                <div class="col-12">
+                  <button type="button" class="btn btn-sm btn-admin-primary" id="btnSavePayment">Save payment</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="offcanvas offcanvas-start text-bg-dark d-lg-none" tabindex="-1" id="mobileNav">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title">A &amp; S Traders</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+      </div>
+      <div class="offcanvas-body">
+        <a class="nav-link text-white-50 py-2" href="index.html">Dashboard</a>
+        <a class="nav-link text-white py-2" href="orders.html">Orders</a>
+        <a class="nav-link text-white-50 py-2" href="customers.html">Customers</a>
+        <a class="nav-link text-white-50 py-2" href="billing.html">Invoices</a>
+        <a class="nav-link text-white-50 py-2" href="inventory.html">Stock</a>
+        <a class="nav-link text-white-50 py-2" href="account.html">My account</a>
+        <hr class="border-secondary" />
+        <button type="button" class="btn btn-outline-light btn-sm w-100 js-logout">Logout</button>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/payment-options.js?v=2"></script>
+    <script src="../assets/js/payment-method-picker.js?v=1"></script>
+    <script src="../assets/js/payment-proof.js?v=1"></script>
+    <script src="js/admin-api.js?v=6"></script>
+    <script src="js/admin-ui.js"></script>
+    <script src="js/admin-common.js"></script>
+    <script src="js/admin-orders.js?v=13"></script>
+  </body>
+</html>

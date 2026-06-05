@@ -1,0 +1,30 @@
+{
+  "name": "as-traders-api",
+  "version": "1.0.0",
+  "description": "Backend for A & S Traders (Express + MongoDB)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "seed": "node seed.js",
+    "seed-accessories": "node seed-accessories.js",
+    "update-images": "node update-product-images.js",
+    "fix-orders": "node fix-order-items.js",
+    "migrate-orders": "node migrate-order-statuses.js",
+    "test-admin": "node scripts/test-admin-api.js",
+    "migrate-source": "node migrate-customer-source.js",
+    "migrate-pricing": "node migrate-product-pricing.js",
+    "react:dev": "npm run dev --prefix react-admin",
+    "react:build": "npm run build --prefix react-admin"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.9.5",
+    "pdfkit": "^0.15.2"
+  }
+}

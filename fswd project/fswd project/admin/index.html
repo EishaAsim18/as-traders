@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard — A &amp; S Traders Admin</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link href="../assets/css/admin.css" rel="stylesheet" />
+  </head>
+  <body class="admin-body">
+    <aside class="admin-sidebar">
+      <div class="brand">
+        <div class="brand-logo">A&amp;S</div>
+        <div class="brand-title">A &amp; S Traders</div>
+        <div class="brand-sub">Administration · Multan</div>
+        <div class="brand-brands">Faisal · Sonex · Porta · Dadex</div>
+      </div>
+      <nav class="nav flex-column flex-grow-1">
+        <div class="nav-section">Operations</div>
+        <a class="nav-link active" href="index.html">Dashboard</a>
+        <a class="nav-link" href="orders.html">Orders</a>
+        <a class="nav-link" href="customers.html">Customers</a>
+        <a class="nav-link" href="billing.html">Invoices</a>
+        <a class="nav-link" href="inventory.html">Inventory</a>
+        <div class="nav-section mt-3">Settings</div>
+        <a class="nav-link" href="account.html">My account</a>
+      </nav>
+      <div class="px-3 mt-auto pt-3 border-top border-secondary border-opacity-25">
+        <button type="button" class="btn btn-outline-light btn-sm w-100 js-logout">Logout</button>
+      </div>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="d-flex align-items-center gap-3">
+          <button class="btn btn-light d-lg-none border" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileNav">
+            Menu
+          </button>
+          <div>
+            <p class="topbar-meta mb-0" id="todayDate">—</p>
+            <p class="topbar-title mb-0" id="adminGreeting">Hello, Admin</p>
+          </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge rounded-pill text-bg-light border small" title="A &amp; S Traders — Multan branch"
+            >Branch: Multan</span
+          >
+          <button type="button" class="btn btn-outline-secondary btn-sm js-logout">Logout</button>
+        </div>
+      </header>
+
+      <div class="p-4 p-lg-5">
+        <div class="page-help">
+          <strong>Overview:</strong> Create invoices, manage inventory, and review low-stock alerts from the shortcuts below.
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <a href="billing.html#create" class="quick-action">
+              <div class="qa-title">+ New invoice</div>
+              <p class="qa-desc">Bill a customer and print PDF</p>
+            </a>
+          </div>
+          <div class="col-md-4">
+            <a href="inventory.html#add" class="quick-action">
+              <div class="qa-title">+ Add product</div>
+              <p class="qa-desc">New SKU in your catalog</p>
+            </a>
+          </div>
+          <div class="col-md-4">
+            <a href="inventory.html?low=1" class="quick-action">
+              <div class="qa-title">Low stock report</div>
+              <p class="qa-desc">See what needs reordering</p>
+            </a>
+          </div>
+        </div>
+
+        <div class="row g-3 g-xl-4 mb-4">
+          <div class="col-sm-6 col-xl-3 d-flex">
+            <div class="stat-card flex-fill">
+              <div class="stat-label">Today’s sales</div>
+              <div class="stat-value text-success" id="todaySales">—</div>
+              <div class="stat-meta" id="totalSkus">— SKUs in catalog</div>
+            </div>
+          </div>
+          <div class="col-sm-6 col-xl-3 d-flex">
+            <div class="stat-card flex-fill">
+              <div class="stat-label">Open invoices</div>
+              <div class="stat-value" id="openAmount">—</div>
+              <div class="stat-meta"><span id="openCount">0</span> awaiting payment</div>
+            </div>
+          </div>
+          <div class="col-sm-6 col-xl-3 d-flex">
+            <a href="inventory.html?low=1" class="stat-card stat-card-link flex-fill">
+              <div class="stat-label">Low stock alerts</div>
+              <div class="stat-value text-warning" id="lowStock">—</div>
+              <div class="stat-meta">Below reorder level</div>
+            </a>
+          </div>
+          <div class="col-sm-6 col-xl-3 d-flex">
+            <div class="stat-card flex-fill">
+              <div class="stat-label">Active shipments</div>
+              <div class="stat-value" id="activeShipments">—</div>
+              <div class="stat-meta">Orders pending or shipping</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-4">
+          <div class="col-xl-8">
+            <div class="table-card">
+              <div class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="fw-bold">Recent orders</div>
+                <a href="orders.html" class="btn btn-sm btn-admin-primary">All orders</a>
+              </div>
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Order</th>
+                      <th>Date</th>
+                      <th>Customer</th>
+                      <th>Amount</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ordersTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-4">
+            <div class="border rounded-4 p-4 bg-white h-100" style="border-color: var(--adm-border)">
+              <div class="fw-bold mb-3">Stock snapshot</div>
+              <div id="stockSnapshot">
+                <p class="small text-muted">Loading stock…</p>
+              </div>
+              <a href="inventory.html" class="btn btn-outline-secondary btn-sm w-100">Manage inventory</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div class="offcanvas offcanvas-start text-bg-dark d-lg-none" tabindex="-1" id="mobileNav">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title">A &amp; S Traders</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+      </div>
+      <div class="offcanvas-body">
+        <a class="nav-link text-white py-2" href="index.html">Dashboard</a>
+        <a class="nav-link text-white-50 py-2" href="orders.html">Orders</a>
+        <a class="nav-link text-white-50 py-2" href="customers.html">Customers</a>
+        <a class="nav-link text-white-50 py-2" href="billing.html">Invoices</a>
+        <a class="nav-link text-white-50 py-2" href="inventory.html">Stock</a>
+        <a class="nav-link text-white-50 py-2" href="account.html">My account</a>
+        <hr class="border-secondary" />
+        <button type="button" class="btn btn-outline-light btn-sm w-100 js-logout">Logout</button>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/admin-api.js"></script>
+    <script src="js/admin-ui.js"></script>
+    <script src="js/admin-common.js"></script>
+    <script>
+      setupAdminPage();
+
+      function statusBadge(status) {
+        const map = {
+          pending: "bg-primary-subtle text-primary-emphasis",
+          confirmed: "bg-info-subtle text-info-emphasis",
+          shipped: "bg-warning-subtle text-warning-emphasis",
+          delivered: "bg-success-subtle text-success-emphasis",
+          cancelled: "bg-danger-subtle text-danger-emphasis",
+        };
+        const css = map[status] || "bg-light text-dark";
+        const label =
+          status === "pending"
+            ? "Pending"
+            : status === "confirmed"
+              ? "Confirmed"
+              : status === "shipped"
+                ? "Shipped"
+                : status === "delivered"
+                  ? "Delivered"
+                  : status === "cancelled"
+                    ? "Cancelled"
+                    : status;
+        return '<span class="badge-status ' + css + '">' + label + "</span>";
+      }
+
+      async function loadDashboard() {
+        const stats = await apiGet("/dashboard/stats");
+        const ordersData = await apiGet("/orders");
+
+        document.getElementById("todaySales").textContent = formatMoney(stats.todaySales);
+        document.getElementById("openAmount").textContent = formatMoney(stats.openInvoiceAmount);
+        document.getElementById("openCount").textContent = stats.openInvoiceCount;
+        document.getElementById("lowStock").textContent = stats.lowStockCount;
+        document.getElementById("activeShipments").textContent = stats.activeShipments;
+        document.getElementById("totalSkus").textContent = stats.totalSkus + " SKUs in catalog";
+
+        const tbody = document.getElementById("ordersTable");
+        tbody.innerHTML = "";
+
+        if (!ordersData.orders.length) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-muted">No orders yet — customer checkout saves here</td></tr>';
+          return;
+        }
+
+        ordersData.orders.slice(0, 8).forEach(function (order) {
+          const date = order.createdAt
+            ? new Date(order.createdAt).toLocaleDateString("en-PK", {
+                day: "numeric",
+                month: "short",
+              })
+            : "—";
+          const row =
+            "<tr><td class='fw-semibold'><a href='orders.html' class='text-decoration-none'>" +
+            order.orderNumber +
+            "</a></td><td class='small text-muted'>" +
+            date +
+            "</td><td>" +
+            order.customerName +
+            "<div class='small text-muted'>" +
+            (order.customerPhone || "") +
+            "</div></td><td>" +
+            formatMoney(order.amount) +
+            "</td><td>" +
+            statusBadge(order.status) +
+            "</td></tr>";
+          tbody.innerHTML += row;
+        });
+
+        const productsData = await apiGet("/products");
+        renderStockSnapshot(productsData.products);
+      }
+
+      function stockHealth(products) {
+        if (!products.length) return 0;
+        let stock = 0;
+        let reorder = 0;
+        products.forEach(function (p) {
+          stock += p.stock;
+          reorder += p.reorderLevel || 1;
+        });
+        return Math.min(100, Math.round((stock / reorder) * 20));
+      }
+
+      function renderStockSnapshot(products) {
+        const groups = {
+          "Ceramics & WC": [],
+          "Pipes & fittings": [],
+          "Showers & taps": [],
+        };
+
+        products.forEach(function (p) {
+          const cat = p.category.toLowerCase();
+          if (cat.includes("pipe")) groups["Pipes & fittings"].push(p);
+          else if (cat.includes("shower") || cat.includes("tap")) groups["Showers & taps"].push(p);
+          else groups["Ceramics & WC"].push(p);
+        });
+
+        const box = document.getElementById("stockSnapshot");
+        box.innerHTML = "";
+
+        Object.keys(groups).forEach(function (label) {
+          const list = groups[label];
+          const pct = stockHealth(list);
+          const barClass = pct < 40 ? "bg-warning" : pct < 70 ? "bg-primary" : "bg-success";
+
+          box.innerHTML +=
+            '<div class="mb-3"><div class="d-flex justify-content-between small mb-1"><span class="text-muted">' +
+            label +
+            '</span><span class="fw-semibold">' +
+            pct +
+            '%</span></div><div class="progress" style="height:6px"><div class="progress-bar ' +
+            barClass +
+            '" style="width:' +
+            pct +
+            '%"></div></div></div>';
+        });
+      }
+
+      loadDashboard().catch(function (err) {
+        console.error(err);
+        showToast("Could not load dashboard. Is the backend running?", "error");
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,85 @@
+{
+  "admin": {
+    "id": "4319e248-87ea-4d79-b83c-50a82db34410",
+    "name": "Asim",
+    "email": "admin@astraders.pk",
+    "password": "admin123"
+  },
+  "products": [
+    {
+      "_id": "6ac35543-df45-46a3-8084-fde7858cdeba",
+      "sku": "WC-RH-01",
+      "name": "Rimless wall-hung WC suite",
+      "category": "Commodes",
+      "brand": "Faisal",
+      "price": 42500,
+      "stock": 14,
+      "reorderLevel": 5,
+      "location": "Aisle B · Rack 3",
+      "imageUrl": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=80",
+      "createdAt": "2026-06-03T11:11:16.415Z",
+      "updatedAt": "2026-06-03T11:11:16.421Z"
+    },
+    {
+      "_id": "caf57635-f006-4d7d-bd7d-d816821acd1d",
+      "sku": "MS-CH-12",
+      "name": "Chrome Muslim shower kit",
+      "category": "Muslim showers",
+      "brand": "Sonex",
+      "price": 8900,
+      "stock": 39,
+      "reorderLevel": 10,
+      "location": "Aisle C · Bin 1",
+      "imageUrl": "https://images.pexels.com/photos/4238595/pexels-photo-4238595.jpeg?auto=compress&cs=tinysrgb&w=800",
+      "createdAt": "2026-06-03T11:11:16.421Z",
+      "updatedAt": "2026-06-03T11:54:51.269Z"
+    },
+    {
+      "_id": "aef8154c-ddd2-4ba9-9925-6647a2924ac3",
+      "sku": "PP-25-4",
+      "name": "PPR pipe 25mm × 4m",
+      "category": "Pipes",
+      "brand": "Faisal",
+      "price": 1890,
+      "stock": 6,
+      "reorderLevel": 20,
+      "location": "Yard · Bay 2",
+      "imageUrl": "https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&w=800&q=80",
+      "createdAt": "2026-06-03T11:11:16.421Z",
+      "updatedAt": "2026-06-03T11:11:16.421Z"
+    }
+  ],
+  "invoices": [
+    {
+      "_id": "9bd8d0f0-83d5-47c7-b08b-edd4ce98d239",
+      "invoiceNumber": "INV-240512",
+      "customerName": "Hassan Traders",
+      "customerPhone": "",
+      "items": [
+        {
+          "name": "Rimless wall-hung WC suite",
+          "quantity": 1,
+          "unitPrice": 42500,
+          "lineTotal": 42500
+        }
+      ],
+      "subtotal": 42500,
+      "tax": 0,
+      "discount": 0,
+      "total": 42500,
+      "status": "pending",
+      "createdAt": "2026-06-03T11:11:16.421Z"
+    }
+  ],
+  "orders": [
+    {
+      "_id": "7ef017ca-a0af-41d4-9ceb-e47dab9b7252",
+      "orderNumber": "CR-2026-10492",
+      "customerName": "Hassan Traders",
+      "amount": 70950,
+      "status": "shipping",
+      "deliveryAddress": "Shop 14, Bosan Road, Multan",
+      "createdAt": "2026-06-03T11:11:16.421Z"
+    }
+  ]
+}
