@@ -2,7 +2,15 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const Customer = require("../models/Customer");
-const { validateRegister, validateLogin } = require("../utils/validateCustomerAuth");
+const { validateRegister, validateLogin, validateForgotPassword, validateResetPassword } = require("../utils/validateCustomerAuth");
+const {
+  createPasswordResetToken,
+  hashPasswordResetToken,
+  passwordResetTokenValid,
+  clearPasswordResetFields,
+  RESET_TTL_MS,
+} = require("../utils/passwordReset");
+const { sendEmail, buildPasswordResetEmail, isEmailConfigured } = require("../utils/sendEmail");
 const requireCustomer = require("../middleware/requireCustomer");
 const { fetchOrdersForCustomer } = require("../utils/customerAdmin");
 const { statusLabel, normalizeStatus } = require("../utils/orderStatus");
@@ -45,6 +53,38 @@ function blockedResponse(res) {
     message: "This account has been blocked. Contact the shop for help.",
     errors: [{ field: "email", message: "Account blocked" }],
   });
+}
+
+const FORGOT_PASSWORD_MESSAGE =
+  "If an account exists with that email, we sent password reset instructions.";
+
+function customerSiteUrl() {
+  return (process.env.CUSTOMER_SITE_URL || "https://as-traders.vercel.app").replace(/\/$/, "");
+}
+
+async function issueCustomerPasswordReset(customer) {
+  const reset = createPasswordResetToken();
+  customer.passwordResetTokenHash = reset.hash;
+  customer.passwordResetExpires = reset.expiresAt;
+  await customer.save();
+
+  const resetUrl =
+    customerSiteUrl() + "/reset-password.html?token=" + encodeURIComponent(reset.token);
+  const emailBody = buildPasswordResetEmail({
+    name: customer.firstName,
+    resetUrl: resetUrl,
+    ttlMs: RESET_TTL_MS,
+  });
+
+  await sendEmail({
+    to: customer.email,
+    subject: "Reset your A & S Traders password",
+    text: emailBody.text,
+    html: emailBody.html,
+    resetUrl: resetUrl,
+  });
+
+  return resetUrl;
 }
 
 // POST /api/public/customers/register
@@ -119,6 +159,61 @@ router.post("/login", async (req, res) => {
   } catch (error) {
     console.error("Customer login error:", error);
     res.status(500).json({ message: "Could not sign in" });
+  }
+});
+
+// POST /api/public/customers/forgot-password
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const check = validateForgotPassword(req.body);
+    if (!check.ok) return validationError(res, check.errors);
+
+    const customer = await Customer.findOne({ email: check.data.email });
+    if (customer && !customer.isBlocked) {
+      await issueCustomerPasswordReset(customer);
+    }
+
+    res.json({
+      message: FORGOT_PASSWORD_MESSAGE,
+      emailConfigured: isEmailConfigured(),
+    });
+  } catch (error) {
+    console.error("Customer forgot password error:", error);
+    res.status(500).json({ message: "Could not process reset request" });
+  }
+});
+
+// POST /api/public/customers/reset-password
+router.post("/reset-password", async (req, res) => {
+  try {
+    const check = validateResetPassword(req.body);
+    if (!check.ok) return validationError(res, check.errors);
+
+    const token = check.data.token;
+    const matched = await Customer.findOne({
+      passwordResetTokenHash: hashPasswordResetToken(token),
+      passwordResetExpires: { $gt: new Date() },
+    });
+
+    if (!matched || !passwordResetTokenValid(matched, token)) {
+      return res.status(400).json({
+        message: "Reset link is invalid or has expired. Request a new one.",
+        errors: [{ field: "token", message: "Reset link is invalid or expired" }],
+      });
+    }
+
+    if (matched.isBlocked) {
+      return blockedResponse(res);
+    }
+
+    matched.password = await bcrypt.hash(check.data.password, 10);
+    clearPasswordResetFields(matched);
+    await matched.save();
+
+    res.json({ message: "Password updated. You can sign in with your new password." });
+  } catch (error) {
+    console.error("Customer reset password error:", error);
+    res.status(500).json({ message: "Could not reset password" });
   }
 });
 

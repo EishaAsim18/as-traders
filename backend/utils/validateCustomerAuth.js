@@ -107,4 +107,61 @@ function validateLogin(body) {
   };
 }
 
-module.exports = { validateRegister, validateLogin, normalizePhone };
+function validateForgotPassword(body) {
+  const errors = [];
+  const email = trim(body.email).toLowerCase();
+
+  if (!email) {
+    errors.push({ field: "email", message: "Email is required" });
+  } else if (!EMAIL_RE.test(email)) {
+    errors.push({ field: "email", message: "Enter a valid email address" });
+  }
+
+  return {
+    ok: errors.length === 0,
+    errors,
+    data: { email },
+  };
+}
+
+function validateResetPassword(body) {
+  const errors = [];
+  const token = trim(body.token);
+  const password = body.password || "";
+  const confirmPassword = body.confirmPassword || "";
+
+  if (!token) {
+    errors.push({ field: "token", message: "Reset link is invalid or expired" });
+  }
+
+  if (!password) {
+    errors.push({ field: "password", message: "Password is required" });
+  } else if (password.length < 8) {
+    errors.push({ field: "password", message: "Password must be at least 8 characters" });
+  } else if (password.length > 72) {
+    errors.push({ field: "password", message: "Password is too long" });
+  } else if (!PASSWORD_SPECIAL_RE.test(password)) {
+    errors.push({
+      field: "password",
+      message: "Password must include at least one special character (!@#$…)",
+    });
+  }
+
+  if (password !== confirmPassword) {
+    errors.push({ field: "confirmPassword", message: "Passwords do not match" });
+  }
+
+  return {
+    ok: errors.length === 0,
+    errors,
+    data: { token, password },
+  };
+}
+
+module.exports = {
+  validateRegister,
+  validateLogin,
+  validateForgotPassword,
+  validateResetPassword,
+  normalizePhone,
+};

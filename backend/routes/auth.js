@@ -8,9 +8,49 @@ const {
   validatePasswordChange,
   adminPublicFields,
 } = require("../utils/validateAdminProfile");
+const { validateForgotPassword, validateResetPassword } = require("../utils/validateCustomerAuth");
+const {
+  createPasswordResetToken,
+  hashPasswordResetToken,
+  passwordResetTokenValid,
+  clearPasswordResetFields,
+  RESET_TTL_MS,
+} = require("../utils/passwordReset");
+const { sendEmail, buildPasswordResetEmail, isEmailConfigured } = require("../utils/sendEmail");
 const { validatePaymentSettings } = require("../utils/paymentSettings");
 
 const router = express.Router();
+
+const FORGOT_PASSWORD_MESSAGE =
+  "If an account exists with that email, we sent password reset instructions.";
+
+function adminSiteUrl() {
+  return (process.env.ADMIN_SITE_URL || "https://as-traders-admin.vercel.app").replace(/\/$/, "");
+}
+
+async function issueAdminPasswordReset(admin) {
+  const reset = createPasswordResetToken();
+  admin.passwordResetTokenHash = reset.hash;
+  admin.passwordResetExpires = reset.expiresAt;
+  await admin.save();
+
+  const resetUrl = adminSiteUrl() + "/reset-password.html?token=" + encodeURIComponent(reset.token);
+  const emailBody = buildPasswordResetEmail({
+    name: admin.name,
+    resetUrl: resetUrl,
+    ttlMs: RESET_TTL_MS,
+  });
+
+  await sendEmail({
+    to: admin.email,
+    subject: "Reset your A & S Traders admin password",
+    text: emailBody.text,
+    html: emailBody.html,
+    resetUrl: resetUrl,
+  });
+
+  return resetUrl;
+}
 
 // POST /api/auth/login
 router.post("/login", async (req, res) => {
@@ -45,6 +85,67 @@ router.post("/login", async (req, res) => {
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
+// POST /api/auth/forgot-password
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const check = validateForgotPassword(req.body);
+    if (!check.ok) {
+      return res.status(400).json({
+        message: check.errors[0].message,
+        errors: check.errors,
+      });
+    }
+
+    const admin = await Admin.findOne({ email: check.data.email });
+    if (admin) {
+      await issueAdminPasswordReset(admin);
+    }
+
+    res.json({
+      message: FORGOT_PASSWORD_MESSAGE,
+      emailConfigured: isEmailConfigured(),
+    });
+  } catch (error) {
+    console.error("Admin forgot password error:", error);
+    res.status(500).json({ message: "Could not process reset request" });
+  }
+});
+
+// POST /api/auth/reset-password
+router.post("/reset-password", async (req, res) => {
+  try {
+    const check = validateResetPassword(req.body);
+    if (!check.ok) {
+      return res.status(400).json({
+        message: check.errors[0].message,
+        errors: check.errors,
+      });
+    }
+
+    const token = check.data.token;
+    const admin = await Admin.findOne({
+      passwordResetTokenHash: hashPasswordResetToken(token),
+      passwordResetExpires: { $gt: new Date() },
+    });
+
+    if (!admin || !passwordResetTokenValid(admin, token)) {
+      return res.status(400).json({
+        message: "Reset link is invalid or has expired. Request a new one.",
+        errors: [{ field: "token", message: "Reset link is invalid or expired" }],
+      });
+    }
+
+    admin.password = await bcrypt.hash(check.data.password, 10);
+    clearPasswordResetFields(admin);
+    await admin.save();
+
+    res.json({ message: "Password updated. You can sign in with your new password." });
+  } catch (error) {
+    console.error("Admin reset password error:", error);
+    res.status(500).json({ message: "Could not reset password" });
   }
 });
 

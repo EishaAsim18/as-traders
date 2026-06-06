@@ -23,6 +23,8 @@ const adminSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true, maxlength: 120 },
     phone: { type: String, default: "", maxlength: 20 },
     password: { type: String, required: true },
+    passwordResetTokenHash: { type: String },
+    passwordResetExpires: { type: Date },
     paymentSettings: {
       type: paymentSettingsSchema,
       default: function () {

@@ -11,6 +11,8 @@ const customerSchema = new mongoose.Schema(
     isBlocked: { type: Boolean, default: false },
     blockedAt: { type: Date },
     password: { type: String, required: true },
+    passwordResetTokenHash: { type: String },
+    passwordResetExpires: { type: Date },
   },
   { timestamps: true }
 );
