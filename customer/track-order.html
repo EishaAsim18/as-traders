@@ -117,7 +117,7 @@
             autocomplete="off"
           />
           <label for="trackProofTxn" class="form-label small fw-semibold mb-1">Transaction / TID</label>
-          <input type="text" class="form-control mb-3" id="trackProofTxn" placeholder="from JazzCash / Easypaisa / bank app" autocomplete="off" />
+          <input type="text" class="form-control mb-3" id="trackProofTxn" autocomplete="off" required />
           <label for="trackProofAmount" class="form-label small fw-semibold mb-1">Amount paid (PKR)</label>
           <input type="number" class="form-control mb-3" id="trackProofAmount" min="1" step="1" />
           <label for="trackProofFile" class="form-label small fw-semibold mb-1">Payment screenshot</label>
@@ -192,9 +192,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="assets/js/payment-info.js?v=3"></script>
-    <script src="assets/js/payment-proof.js?v=2"></script>
+    <script src="assets/js/payment-proof.js?v=3"></script>
     <script src="assets/js/customer-common.js?v=23"></script>
-    <script src="assets/js/track-order-page.js?v=9"></script>
+    <script src="assets/js/track-order-page.js?v=10"></script>
     <script>
       mountPaymentInfo("#trackPaymentInfo", "compact");
     </script>

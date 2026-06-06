@@ -265,12 +265,14 @@ if (btnSuccessProof) {
     transactionId: txnInput ? txnInput.value : "",
     paidAmount: amountInput ? amountInput.value : "",
     orderAmount: lastPlacedOrder.amount,
+    paymentMethod: lastPlacedOrder.paymentMethod,
     file: file,
   });
   if (!fieldCheck.ok) {
     msgEl.textContent = fieldCheck.message;
     msgEl.className = "small mt-2 text-danger";
     msgEl.classList.remove("d-none");
+    if (txnInput) setTxnInputState(txnInput, fieldCheck.message, false);
     return;
   }
 
@@ -376,6 +378,11 @@ document.getElementById("checkoutForm").addEventListener("submit", async functio
         if (amountInput) amountInput.value = String(data.order.amount || "");
         const txnInput = document.getElementById("successProofTxn");
         if (txnInput) txnInput.value = "";
+        if (typeof wireTransactionIdValidation === "function") {
+          wireTransactionIdValidation("successProofTxn", function () {
+            return lastPlacedOrder ? lastPlacedOrder.paymentMethod : "bank_transfer";
+          });
+        }
       } else if (proofBox) {
         proofBox.classList.add("d-none");
       }

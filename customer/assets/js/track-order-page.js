@@ -104,18 +104,20 @@ function showOrder(order) {
 }
 
 let trackProofOrderAmount = null;
+let trackProofPaymentMethod = "bank_transfer";
 
 function hideProofGate() {
   const gate = document.getElementById("trackProofGate");
   if (gate) gate.classList.add("d-none");
 }
 
-function showProofGate(orderNumber, paymentMethodLabel, orderAmount) {
+function showProofGate(orderNumber, paymentMethodLabel, orderAmount, paymentMethod) {
   document.getElementById("trackResults").classList.add("d-none");
   const gate = document.getElementById("trackProofGate");
   if (!gate) return;
 
   trackProofOrderAmount = orderAmount != null ? Number(orderAmount) : trackProofOrderAmount;
+  if (paymentMethod) trackProofPaymentMethod = paymentMethod;
 
   gate.classList.remove("d-none");
   document.getElementById("trackProofGateOrder").textContent = orderNumber;
@@ -142,6 +144,12 @@ function showProofGate(orderNumber, paymentMethodLabel, orderAmount) {
 
   const msgEl = document.getElementById("trackProofMsg");
   if (msgEl) msgEl.classList.add("d-none");
+
+  if (typeof wireTransactionIdValidation === "function") {
+    wireTransactionIdValidation("trackProofTxn", function () {
+      return trackProofPaymentMethod;
+    });
+  }
 }
 
 async function uploadTrackPaymentProof(orderNumber) {
@@ -165,12 +173,14 @@ async function uploadTrackPaymentProof(orderNumber) {
     transactionId: txnInput ? txnInput.value : "",
     paidAmount: amountInput ? amountInput.value : "",
     orderAmount: trackProofOrderAmount,
+    paymentMethod: trackProofPaymentMethod,
     file: file,
   });
   if (!fieldCheck.ok) {
     msgEl.textContent = fieldCheck.message;
     msgEl.className = "small mt-2 text-danger";
     msgEl.classList.remove("d-none");
+    if (txnInput) setTxnInputState(txnInput, fieldCheck.message, false);
     return false;
   }
 
@@ -285,10 +295,12 @@ async function trackOrder(orderNumber) {
     document.getElementById("trackResults").classList.add("d-none");
     if (err.requiresPaymentProof) {
       if (err.orderAmount != null) trackProofOrderAmount = Number(err.orderAmount);
+      if (err.paymentMethod) trackProofPaymentMethod = err.paymentMethod;
       showProofGate(
         err.orderNumber || orderNumber.trim(),
         err.paymentMethodLabel || "",
-        err.orderAmount
+        err.orderAmount,
+        err.paymentMethod
       );
       errEl.classList.add("d-none");
       return;

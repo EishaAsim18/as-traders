@@ -316,6 +316,17 @@ router.post("/payment-proof", async (req, res) => {
       });
     }
 
+    const duplicateTxn = await Order.findOne({
+      paymentProofTxnId: proofValidation.txnId,
+      _id: { $ne: order._id },
+    }).select("orderNumber");
+    if (duplicateTxn) {
+      return res.status(400).json({
+        message: "This transaction ID was already used on another order. Check your TID or contact the shop.",
+        field: "transactionId",
+      });
+    }
+
     order.paymentProofUrl = saved.url;
     order.paymentProofUploadedAt = new Date();
     order.paymentProofTxnId = proofValidation.txnId;
