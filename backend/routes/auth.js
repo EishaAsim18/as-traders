@@ -100,14 +100,22 @@ router.post("/forgot-password", async (req, res) => {
     }
 
     const admin = await Admin.findOne({ email: check.data.email });
+    let resetUrl = null;
     if (admin) {
-      await issueAdminPasswordReset(admin);
+      resetUrl = await issueAdminPasswordReset(admin);
     }
 
-    res.json({
+    const payload = {
       message: FORGOT_PASSWORD_MESSAGE,
       emailConfigured: isEmailConfigured(),
-    });
+    };
+    if (!isEmailConfigured() && resetUrl) {
+      payload.resetUrl = resetUrl;
+      payload.message =
+        "Email is not configured on the server. Use this reset link now (valid for 1 hour):";
+    }
+
+    res.json(payload);
   } catch (error) {
     console.error("Admin forgot password error:", error);
     res.status(500).json({ message: "Could not process reset request" });

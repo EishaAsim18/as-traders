@@ -169,14 +169,22 @@ router.post("/forgot-password", async (req, res) => {
     if (!check.ok) return validationError(res, check.errors);
 
     const customer = await Customer.findOne({ email: check.data.email });
+    let resetUrl = null;
     if (customer && !customer.isBlocked) {
-      await issueCustomerPasswordReset(customer);
+      resetUrl = await issueCustomerPasswordReset(customer);
     }
 
-    res.json({
+    const payload = {
       message: FORGOT_PASSWORD_MESSAGE,
       emailConfigured: isEmailConfigured(),
-    });
+    };
+    if (!isEmailConfigured() && resetUrl) {
+      payload.resetUrl = resetUrl;
+      payload.message =
+        "Email is not configured on the server. Use this reset link now (valid for 1 hour):";
+    }
+
+    res.json(payload);
   } catch (error) {
     console.error("Customer forgot password error:", error);
     res.status(500).json({ message: "Could not process reset request" });

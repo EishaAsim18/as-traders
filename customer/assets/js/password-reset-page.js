@@ -25,6 +25,19 @@
     return "";
   }
 
+  function showResetLink(containerId, url) {
+    const box = document.getElementById(containerId);
+    if (!box || !url) return;
+    box.className = "border rounded-3 p-3 bg-light mb-3";
+    box.innerHTML =
+      '<p class="small fw-semibold mb-2">Reset link</p>' +
+      '<a href="' +
+      url +
+      '" class="btn btn-accent btn-sm">Open reset password page</a>' +
+      '<p class="small text-muted mt-2 mb-0">Link expires in 1 hour. You can bookmark it until you finish.</p>';
+    box.classList.remove("d-none");
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     const forgotForm = document.getElementById("forgotForm");
     if (forgotForm) {
@@ -42,12 +55,17 @@
 
         try {
           const data = await publicPost("/customers/forgot-password", { email: email });
-          let msg = data.message || "Check your email for the reset link.";
-          if (data.emailConfigured === false) {
-            msg +=
-              " Email is not configured on the server yet — contact A & S Traders if you do not receive a message.";
+          showAlert("forgotAlert", data.message || "Check your email for the reset link.", "success");
+          if (data.resetUrl) {
+            showResetLink("forgotResetLink", data.resetUrl);
+          } else if (data.emailConfigured === false) {
+            showAlert(
+              "forgotAlert",
+              (data.message || "") +
+                " If you have an account, contact A & S Traders — email sending is not set up yet.",
+              "warning"
+            );
           }
-          showAlert("forgotAlert", msg, "success");
           forgotForm.classList.add("d-none");
         } catch (err) {
           showAlert("forgotAlert", err.message || "Could not send reset link", "danger");
