@@ -27,6 +27,6 @@ function proofImageUrl(path) {
       ? API_BASE_URL
       : typeof getBackendOrigin === "function"
         ? getBackendOrigin()
-        : "https://fswd-production.up.railway.app";
+        : "https://as-traders-production.up.railway.app";
   return origin + path;
 }

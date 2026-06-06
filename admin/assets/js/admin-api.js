@@ -1,5 +1,5 @@
 // Admin API client — requires js/config.js loaded first (API_URL).
-var ADMIN_PRODUCTION_API_URL = "https://fswd-production.up.railway.app";
+var ADMIN_PRODUCTION_API_URL = "https://as-traders-production.up.railway.app";
 
 function isLocalAdminHost() {
   return window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";

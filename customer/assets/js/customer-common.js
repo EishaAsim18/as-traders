@@ -14,7 +14,7 @@ const PRODUCT_IMAGES_BY_SKU = {
 const AUTH_HERO_IMAGE = "/assets/images/auth-showroom.jpg";
 const AUTH_HERO_FALLBACK = "/assets/images/auth-showroom.svg";
 
-var CUSTOMER_PRODUCTION_API_URL = "https://fswd-production.up.railway.app";
+var CUSTOMER_PRODUCTION_API_URL = "https://as-traders-production.up.railway.app";
 
 function isLocalCustomerHost() {
   return (
@@ -38,7 +38,7 @@ function getPublicApiBase() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
     return window.location.origin + "/api/public";
   }
-  return "https://fswd-production.up.railway.app/api/public";
+  return "https://as-traders-production.up.railway.app/api/public";
 }
 
 /** Page origin for static assets (/assets, /customer). */

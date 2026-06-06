@@ -5,7 +5,7 @@
 (function () {
   var origin = typeof API_BASE_URL !== "undefined"
     ? API_BASE_URL
-    : "https://fswd-production.up.railway.app";
+    : "https://as-traders-production.up.railway.app";
 
   window.__AS_BACKEND_ORIGIN__ = origin;
 

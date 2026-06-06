@@ -423,7 +423,7 @@
           ? getBackendOrigin()
           : typeof API_BASE_URL !== "undefined"
             ? API_BASE_URL
-            : "https://fswd-production.up.railway.app";
+            : "https://as-traders-production.up.railway.app";
       const fallback =
         typeof assetUrl === "function"
           ? assetUrl(fallbackPath)

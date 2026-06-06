@@ -39,7 +39,7 @@ function getPaymentApiUrl() {
   if (typeof API_BASE_URL !== "undefined") {
     return API_BASE_URL + "/api/public/contact";
   }
-  return "https://fswd-production.up.railway.app/api/public/contact";
+  return "https://as-traders-production.up.railway.app/api/public/contact";
 }
 
 function applyPaymentFromServer(payment) {

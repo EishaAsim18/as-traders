@@ -1,5 +1,5 @@
 (function () {
-  var PRODUCTION_API_URL = "https://fswd-production.up.railway.app";
+  var PRODUCTION_API_URL = "https://as-traders-production.up.railway.app";
 
   function isLocalHost() {
     return window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
