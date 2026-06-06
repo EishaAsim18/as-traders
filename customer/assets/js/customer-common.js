@@ -206,6 +206,7 @@ async function publicGet(path, queryParams) {
     if (data.orderNumber) err.orderNumber = data.orderNumber;
     if (data.paymentMethod) err.paymentMethod = data.paymentMethod;
     if (data.paymentMethodLabel) err.paymentMethodLabel = data.paymentMethodLabel;
+    if (data.orderAmount != null) err.orderAmount = data.orderAmount;
     throw err;
   }
   return data;

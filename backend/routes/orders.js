@@ -33,6 +33,12 @@ function formatOrder(order) {
     o.paymentStatus !== "paid" &&
     !!o.codCashReportedAt;
   o.hasPaymentProof = !!o.paymentProofUrl;
+  o.paymentProofChecks = o.paymentProofChecks || null;
+  o.paymentProofReadyForReview = !!(
+    o.paymentProofUrl &&
+    o.paymentProofChecks &&
+    o.paymentProofChecks.autoChecksPassed
+  );
   return o;
 }
 

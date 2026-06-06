@@ -49,6 +49,18 @@ const orderSchema = new mongoose.Schema(
     paymentNote: { type: String, default: "", maxlength: 200 },
     paymentProofUrl: { type: String, default: "" },
     paymentProofUploadedAt: { type: Date },
+    paymentProofTxnId: { type: String, default: "", maxlength: 40 },
+    paymentProofAmount: { type: Number },
+    paymentProofSender: { type: String, default: "", maxlength: 80 },
+    paymentProofChecks: {
+      txnIdValid: { type: Boolean, default: false },
+      amountMatch: { type: Boolean, default: false },
+      imageValid: { type: Boolean, default: false },
+      autoChecksPassed: { type: Boolean, default: false },
+      declaredAmount: { type: Number },
+      expectedAmount: { type: Number },
+      warnings: [{ type: String, maxlength: 200 }],
+    },
     /** Delivery staff reported COD cash collected — admin must confirm Paid */
     codCashReportedAt: { type: Date },
     codCashReportedNote: { type: String, default: "", maxlength: 300 },

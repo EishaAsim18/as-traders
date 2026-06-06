@@ -19,6 +19,103 @@ function applyPaymentMethodAutoNote(method) {
   }
 }
 
+function proofCheckBadge(passed, label) {
+  const cls = passed
+    ? "bg-success-subtle text-success-emphasis"
+    : "bg-danger-subtle text-danger-emphasis";
+  const icon = passed ? "✓" : "!";
+  return (
+    '<span class="badge rounded-pill ' +
+    cls +
+    ' me-1 mb-1">' +
+    icon +
+    " " +
+    label +
+    "</span>"
+  );
+}
+
+function renderPaymentProofChecks(order) {
+  const box = document.getElementById("modalPaymentProofChecks");
+  if (!box) return;
+
+  if (!order.paymentProofUrl) {
+    box.classList.add("d-none");
+    box.innerHTML = "";
+    return;
+  }
+
+  const checks = order.paymentProofChecks || {};
+  const hasMeta = !!(order.paymentProofTxnId || order.paymentProofAmount);
+  const lines = [];
+
+  if (order.paymentProofTxnId) {
+    lines.push(
+      '<div class="mb-1"><span class="text-muted">Transaction ID:</span> <code class="user-select-all">' +
+        order.paymentProofTxnId +
+        "</code></div>"
+    );
+  }
+  if (order.paymentProofAmount != null) {
+    lines.push(
+      '<div class="mb-1"><span class="text-muted">Customer declared:</span> <strong>' +
+        formatMoney(order.paymentProofAmount) +
+        "</strong>" +
+        (order.amount != null
+          ? ' <span class="text-muted">· order total ' + formatMoney(order.amount) + "</span>"
+          : "") +
+        "</div>"
+    );
+  }
+  if (order.paymentProofSender) {
+    lines.push(
+      '<div class="mb-1"><span class="text-muted">Sender note:</span> ' +
+        order.paymentProofSender +
+        "</div>"
+    );
+  }
+
+  if (hasMeta || checks.txnIdValid != null) {
+    lines.push('<div class="mt-2 mb-1 fw-semibold">Auto verification</div>');
+    lines.push(
+      '<div class="d-flex flex-wrap gap-1">' +
+        proofCheckBadge(!!checks.amountMatch, "Amount matches order") +
+        proofCheckBadge(!!checks.txnIdValid, "Transaction ID format OK") +
+        proofCheckBadge(!!checks.imageValid, "Screenshot looks valid") +
+        "</div>"
+    );
+
+    if (checks.autoChecksPassed) {
+      lines.push(
+        '<p class="small text-success mb-0 mt-2">Checks passed — compare the TID and amount on the screenshot, then confirm payment.</p>'
+      );
+    } else {
+      lines.push(
+        '<p class="small text-warning mb-0 mt-2">Review carefully — one or more checks failed or this is an older upload without details.</p>'
+      );
+    }
+
+    if (checks.warnings && checks.warnings.length) {
+      lines.push(
+        '<ul class="small text-muted mb-0 mt-2 ps-3">' +
+          checks.warnings
+            .map(function (w) {
+              return "<li>" + w + "</li>";
+            })
+            .join("") +
+          "</ul>"
+      );
+    }
+  } else {
+    lines.push(
+      '<p class="small text-muted mb-0">Older upload — no transaction details. Verify manually from the screenshot.</p>'
+    );
+  }
+
+  box.innerHTML = lines.join("");
+  box.classList.remove("d-none");
+}
+
 function renderPaymentProofBlock(order) {
   const empty = document.getElementById("modalPaymentProofEmpty");
   const link = document.getElementById("modalPaymentProofLink");
@@ -40,6 +137,7 @@ function renderPaymentProofBlock(order) {
     link.href = url;
     link.classList.remove("d-none");
     img.classList.remove("d-none");
+    renderPaymentProofChecks(order);
     if (confirmBtn) {
       confirmBtn.classList.toggle("d-none", isPaid);
     }
@@ -48,6 +146,7 @@ function renderPaymentProofBlock(order) {
     }
   } else {
     empty.classList.remove("d-none");
+    renderPaymentProofChecks(order);
     link.classList.add("d-none");
     img.classList.add("d-none");
     img.removeAttribute("src");

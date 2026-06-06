@@ -253,14 +253,22 @@ const btnSuccessProof = document.getElementById("btnSuccessProofUpload");
 if (btnSuccessProof) {
   btnSuccessProof.addEventListener("click", async function () {
   const fileInput = document.getElementById("successProofFile");
+  const txnInput = document.getElementById("successProofTxn");
+  const amountInput = document.getElementById("successProofAmount");
   const msgEl = document.getElementById("successProofMsg");
   const btn = document.getElementById("btnSuccessProofUpload");
 
   if (!lastPlacedOrder) return;
 
   const file = fileInput && fileInput.files[0];
-  if (!file) {
-    msgEl.textContent = "Choose a screenshot image first";
+  const fieldCheck = validatePaymentProofFields({
+    transactionId: txnInput ? txnInput.value : "",
+    paidAmount: amountInput ? amountInput.value : "",
+    orderAmount: lastPlacedOrder.amount,
+    file: file,
+  });
+  if (!fieldCheck.ok) {
+    msgEl.textContent = fieldCheck.message;
     msgEl.className = "small mt-2 text-danger";
     msgEl.classList.remove("d-none");
     return;
@@ -275,16 +283,20 @@ if (btnSuccessProof) {
     const phone = lastPlacedOrder.phone || "";
     const digits = phone.replace(/\D/g, "").slice(-4);
 
-    await publicPost("/orders/payment-proof", {
+    const result = await publicPost("/orders/payment-proof", {
       orderNumber: lastPlacedOrder.orderNumber,
       phoneLast4: digits,
+      transactionId: fieldCheck.transactionId,
+      paidAmount: fieldCheck.paidAmount,
+      senderNote: fieldCheck.senderNote,
       dataUrl: dataUrl,
     });
 
-    msgEl.textContent = "Screenshot uploaded. We will verify and confirm payment.";
+    msgEl.textContent = result.message || "Screenshot uploaded. We will verify and confirm payment.";
     msgEl.className = "small mt-2 text-success";
     msgEl.classList.remove("d-none");
     fileInput.value = "";
+    if (txnInput) txnInput.value = "";
     updateSuccessTrackLink(true);
   } catch (err) {
     msgEl.textContent = err.message || "Upload failed";
@@ -342,6 +354,7 @@ document.getElementById("checkoutForm").addEventListener("submit", async functio
       orderNumber: data.order.orderNumber,
       phone: formData.customerPhone.trim(),
       paymentMethod: method,
+      amount: data.order.amount,
     };
     sessionStorage.setItem(
       "asLastCheckoutPhone",
@@ -359,6 +372,10 @@ document.getElementById("checkoutForm").addEventListener("submit", async functio
         successPay.appendChild(extra);
         mountPaymentInfo("#successPaymentDetails", "compact");
         if (proofBox) proofBox.classList.remove("d-none");
+        const amountInput = document.getElementById("successProofAmount");
+        if (amountInput) amountInput.value = String(data.order.amount || "");
+        const txnInput = document.getElementById("successProofTxn");
+        if (txnInput) txnInput.value = "";
       } else if (proofBox) {
         proofBox.classList.add("d-none");
       }

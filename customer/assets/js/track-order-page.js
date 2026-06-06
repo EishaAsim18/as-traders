@@ -103,15 +103,19 @@ function showOrder(order) {
   });
 }
 
+let trackProofOrderAmount = null;
+
 function hideProofGate() {
   const gate = document.getElementById("trackProofGate");
   if (gate) gate.classList.add("d-none");
 }
 
-function showProofGate(orderNumber, paymentMethodLabel) {
+function showProofGate(orderNumber, paymentMethodLabel, orderAmount) {
   document.getElementById("trackResults").classList.add("d-none");
   const gate = document.getElementById("trackProofGate");
   if (!gate) return;
+
+  trackProofOrderAmount = orderAmount != null ? Number(orderAmount) : trackProofOrderAmount;
 
   gate.classList.remove("d-none");
   document.getElementById("trackProofGateOrder").textContent = orderNumber;
@@ -126,6 +130,11 @@ function showProofGate(orderNumber, paymentMethodLabel) {
     if (saved) phoneInput.value = saved;
   }
 
+  const amountInput = document.getElementById("trackProofAmount");
+  if (amountInput && trackProofOrderAmount) {
+    amountInput.value = String(trackProofOrderAmount);
+  }
+
   const payBox = document.getElementById("trackProofPaymentInfo");
   if (payBox && typeof mountPaymentInfo === "function") {
     mountPaymentInfo("#trackProofPaymentInfo", "compact");
@@ -138,12 +147,12 @@ function showProofGate(orderNumber, paymentMethodLabel) {
 async function uploadTrackPaymentProof(orderNumber) {
   const fileInput = document.getElementById("trackProofFile");
   const phoneInput = document.getElementById("trackProofPhone4");
+  const txnInput = document.getElementById("trackProofTxn");
+  const amountInput = document.getElementById("trackProofAmount");
   const msgEl = document.getElementById("trackProofMsg");
   const btn = document.getElementById("trackProofUploadBtn");
 
-  const file = fileInput && fileInput.files[0];
   const phoneLast4 = phoneInput ? phoneInput.value.trim() : "";
-
   if (!/^\d{4}$/.test(phoneLast4)) {
     msgEl.textContent = "Enter the last 4 digits of your mobile number";
     msgEl.className = "small mt-2 text-danger";
@@ -151,8 +160,15 @@ async function uploadTrackPaymentProof(orderNumber) {
     return false;
   }
 
-  if (!file) {
-    msgEl.textContent = "Choose a screenshot image first";
+  const file = fileInput && fileInput.files[0];
+  const fieldCheck = validatePaymentProofFields({
+    transactionId: txnInput ? txnInput.value : "",
+    paidAmount: amountInput ? amountInput.value : "",
+    orderAmount: trackProofOrderAmount,
+    file: file,
+  });
+  if (!fieldCheck.ok) {
+    msgEl.textContent = fieldCheck.message;
     msgEl.className = "small mt-2 text-danger";
     msgEl.classList.remove("d-none");
     return false;
@@ -164,15 +180,19 @@ async function uploadTrackPaymentProof(orderNumber) {
 
   try {
     const dataUrl = await readImageFileAsDataUrl(file);
-    await publicPost("/orders/payment-proof", {
+    const result = await publicPost("/orders/payment-proof", {
       orderNumber: orderNumber.trim(),
       phoneLast4: phoneLast4,
+      transactionId: fieldCheck.transactionId,
+      paidAmount: fieldCheck.paidAmount,
+      senderNote: fieldCheck.senderNote,
       dataUrl: dataUrl,
     });
 
     sessionStorage.setItem("asLastCheckoutPhone", phoneLast4);
     fileInput.value = "";
-    msgEl.textContent = "Screenshot uploaded. Loading your order…";
+    if (txnInput) txnInput.value = "";
+    msgEl.textContent = result.message || "Screenshot uploaded. Loading your order…";
     msgEl.className = "small mt-2 text-success";
     msgEl.classList.remove("d-none");
     return true;
@@ -264,9 +284,11 @@ async function trackOrder(orderNumber) {
   } catch (err) {
     document.getElementById("trackResults").classList.add("d-none");
     if (err.requiresPaymentProof) {
+      if (err.orderAmount != null) trackProofOrderAmount = Number(err.orderAmount);
       showProofGate(
         err.orderNumber || orderNumber.trim(),
-        err.paymentMethodLabel || ""
+        err.paymentMethodLabel || "",
+        err.orderAmount
       );
       errEl.classList.add("d-none");
       return;

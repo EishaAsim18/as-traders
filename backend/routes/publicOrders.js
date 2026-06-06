@@ -16,6 +16,7 @@ const { paymentMethodLabel } = require("../utils/paymentMethod");
 const { resolveOrderTrackAccess, resolvePaymentProofForTrack } = require("../utils/orderAccess");
 const { phoneLast4Matches } = require("../utils/phoneMatch");
 const { savePaymentProof } = require("../utils/savePaymentProof");
+const { validatePaymentProofSubmission } = require("../utils/validatePaymentProof");
 const { normalizePaymentMethod } = require("../utils/paymentMethod");
 
 const router = express.Router();
@@ -228,6 +229,7 @@ router.get("/track/:orderNumber", trackOrderAuth, async (req, res) => {
         orderNumber: proofCheck.orderNumber,
         paymentMethod: proofCheck.paymentMethod,
         paymentMethodLabel: proofCheck.paymentMethodLabel,
+        orderAmount: order.amount,
       });
     }
 
@@ -296,17 +298,43 @@ router.post("/payment-proof", async (req, res) => {
       });
     }
 
-    const saved = savePaymentProof(req.body.dataUrl, order.orderNumber);
+    let saved;
+    try {
+      saved = savePaymentProof(req.body.dataUrl, order.orderNumber);
+    } catch (saveErr) {
+      return res.status(400).json({ message: saveErr.message || "Could not save screenshot" });
+    }
+
+    const proofValidation = validatePaymentProofSubmission(order, req.body, {
+      buffer: saved.buffer,
+      mime: saved.mime,
+    });
+    if (!proofValidation.ok) {
+      return res.status(400).json({
+        message: proofValidation.message,
+        field: proofValidation.field,
+      });
+    }
+
     order.paymentProofUrl = saved.url;
     order.paymentProofUploadedAt = new Date();
+    order.paymentProofTxnId = proofValidation.txnId;
+    order.paymentProofAmount = proofValidation.paidAmount;
+    order.paymentProofSender = proofValidation.senderNote || "";
+    order.paymentProofChecks = proofValidation.checks;
     if (!order.paymentNote) {
-      order.paymentNote = "Customer uploaded payment screenshot — pending admin verification";
+      order.paymentNote = proofValidation.checks.autoChecksPassed
+        ? "Customer uploaded payment proof — auto-checks passed, pending admin confirmation"
+        : "Customer uploaded payment proof — review transaction details and screenshot";
     }
     await order.save();
 
     res.json({
-      message: "Screenshot received. We will verify and confirm your payment soon.",
+      message: proofValidation.checks.autoChecksPassed
+        ? "Screenshot received. Amount and transaction ID match your order — we will confirm soon."
+        : "Screenshot received. Our team will verify the payment details and confirm your order.",
       paymentProofUrl: saved.url,
+      checks: proofValidation.checks,
     });
   } catch (error) {
     console.error("Customer payment proof error:", error);

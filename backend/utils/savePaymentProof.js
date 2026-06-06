@@ -45,6 +45,9 @@ function savePaymentProof(dataUrl, orderNumber) {
   return {
     url: "/uploads/payment-proofs/" + fileName,
     fileName: fileName,
+    buffer: buffer,
+    mime: mime,
+    byteSize: buffer.length,
   };
 }
 
