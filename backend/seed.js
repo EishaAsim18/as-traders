@@ -63,7 +63,7 @@ async function seed() {
       stock: 14,
       reorderLevel: 5,
       location: "Aisle B · Rack 3",
-      imageUrl: "/assets/images/products/wc-rh-01.svg",
+      imageUrl: "/assets/images/products/wc-rh-01.jpg",
     },
     {
       sku: "MS-CH-12",
@@ -74,7 +74,7 @@ async function seed() {
       stock: 40,
       reorderLevel: 10,
       location: "Aisle C · Bin 1",
-      imageUrl: "/assets/images/products/ms-ch-12.svg",
+      imageUrl: "/assets/images/products/ms-ch-12.jpg",
     },
     {
       sku: "PP-25-4",
@@ -97,7 +97,7 @@ async function seed() {
       stock: 22,
       reorderLevel: 8,
       location: "Aisle A · Rack 5",
-      imageUrl: "/assets/images/products/mx-bs-05.svg",
+      imageUrl: "/assets/images/products/mx-bs-05.jpg",
     },
     {
       sku: "CC-FR-02",
@@ -108,7 +108,7 @@ async function seed() {
       stock: 9,
       reorderLevel: 4,
       location: "Aisle B · Rack 1",
-      imageUrl: "/assets/images/products/cc-fr-02.svg",
+      imageUrl: "/assets/images/products/cc-fr-02.jpg",
     },
     {
       sku: "ACC-TR-01",

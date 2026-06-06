@@ -4,11 +4,11 @@ const connectDB = require("./db");
 const Product = require("./models/Product");
 
 const IMAGES = {
-  "WC-RH-01": "/assets/images/products/wc-rh-01.svg",
-  "MS-CH-12": "/assets/images/products/ms-ch-12.svg",
+  "WC-RH-01": "/assets/images/products/wc-rh-01.jpg",
+  "MS-CH-12": "/assets/images/products/ms-ch-12.jpg",
   "PP-25-4": "/assets/images/products/pp-25-4.jpg",
-  "MX-BS-05": "/assets/images/products/mx-bs-05.svg",
-  "CC-FR-02": "/assets/images/products/cc-fr-02.svg",
+  "MX-BS-05": "/assets/images/products/mx-bs-05.jpg",
+  "CC-FR-02": "/assets/images/products/cc-fr-02.jpg",
   "ACC-TR-01": "/assets/images/products/acc-tr-01.jpg",
   "ACC-SD-02": "/assets/images/products/acc-sd-02.jpg",
   "BS-5P-01": "/assets/images/products/bs-5p-01.jpg",
