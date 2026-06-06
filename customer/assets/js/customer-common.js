@@ -119,6 +119,11 @@ function assetUrl(path) {
   if (!p) return "";
   if (p.startsWith("data:") || p.startsWith("http://") || p.startsWith("https://")) return p;
 
+  // Product/upload images live on the Railway backend, not the Vercel static site.
+  if (p.startsWith("/assets/") || p.startsWith("/uploads/")) {
+    return getBackendOrigin() + p;
+  }
+
   if (p.startsWith("/")) {
     return window.location.origin + p;
   }
