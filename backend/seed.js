@@ -85,7 +85,7 @@ async function seed() {
       stock: 6,
       reorderLevel: 20,
       location: "Yard · Bay 2",
-      imageUrl: "/assets/images/products/pp-25-4.svg",
+      imageUrl: "/assets/images/products/pp-25-4.jpg",
     },
     {
       sku: "MX-BS-05",

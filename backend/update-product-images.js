@@ -6,7 +6,7 @@ const Product = require("./models/Product");
 const IMAGES = {
   "WC-RH-01": "/assets/images/products/wc-rh-01.svg",
   "MS-CH-12": "/assets/images/products/ms-ch-12.svg",
-  "PP-25-4": "/assets/images/products/pp-25-4.svg",
+  "PP-25-4": "/assets/images/products/pp-25-4.jpg",
   "MX-BS-05": "/assets/images/products/mx-bs-05.svg",
   "CC-FR-02": "/assets/images/products/cc-fr-02.svg",
   "ACC-TR-01": "/assets/images/products/acc-tr-01.jpg",

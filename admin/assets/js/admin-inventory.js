@@ -140,6 +140,34 @@ async function loadProducts() {
   updateStats();
 }
 
+function formatImagePathDisplay(imageUrl) {
+  const url = String(imageUrl || "").trim();
+  if (!url) return "—";
+  if (url.startsWith("/assets/")) return url;
+  if (/^https?:\/\//i.test(url)) return url;
+  return url;
+}
+
+function predictedUploadPath(sku, file) {
+  if (!sku || !file) return "/assets/images/products/";
+  const ext = String(file.name || "").match(/\.(jpe?g|png|webp|svg)$/i);
+  const suffix = ext ? ext[0].toLowerCase().replace("jpeg", "jpg") : ".jpg";
+  return (
+    "/assets/images/products/" +
+    String(sku)
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "-")
+      .replace(/-+/g, "-") +
+    suffix
+  );
+}
+
+function setImagePathLabel(elementId, value) {
+  const el = document.getElementById(elementId);
+  if (el) el.textContent = formatImagePathDisplay(value);
+}
+
 function previewFile(file, imgEl) {
   if (!file) return;
   fileToDataUrl(file).then(function (url) {
@@ -151,6 +179,7 @@ function resetNewImagePreview() {
   newImageFile = null;
   document.getElementById("newImagePreview").src = "../assets/images/product-placeholder.svg";
   document.getElementById("newImageFile").value = "";
+  setImagePathLabel("newImagePath", "/assets/images/products/");
 }
 
 async function deleteProduct(product) {
@@ -191,6 +220,7 @@ function openEditModal(product) {
   document.getElementById("editImagePreview").src = catalogImageSrc(product.imageUrl);
   const editFileInput = document.getElementById("editImageFile");
   if (editFileInput) editFileInput.value = "";
+  setImagePathLabel("editImagePath", product.imageUrl || "—");
 
   new bootstrap.Modal(document.getElementById("editProductModal")).show();
 }
@@ -316,6 +346,9 @@ async function saveEditProduct() {
   await loadProducts();
 
   const saved = result.product || {};
+  if (saved.imageUrl) {
+    setImagePathLabel("editImagePath", saved.imageUrl);
+  }
   let msg = "Product updated — visible on customer shop";
   if ((saved.discountPercent || 0) > 0) {
     msg +=
@@ -361,6 +394,16 @@ document.getElementById("newImageFile").addEventListener("change", function (e) 
   newImageFile = e.target.files[0] || null;
   if (newImageFile) {
     previewFile(newImageFile, document.getElementById("newImagePreview"));
+    setImagePathLabel(
+      "newImagePath",
+      predictedUploadPath(document.getElementById("newSku").value, newImageFile)
+    );
+  }
+});
+
+document.getElementById("newSku").addEventListener("input", function () {
+  if (newImageFile) {
+    setImagePathLabel("newImagePath", predictedUploadPath(document.getElementById("newSku").value, newImageFile));
   }
 });
 
@@ -368,6 +411,10 @@ document.getElementById("editImageFile").addEventListener("change", function (e)
   editImageFile = e.target.files[0] || null;
   if (editImageFile) {
     previewFile(editImageFile, document.getElementById("editImagePreview"));
+    setImagePathLabel(
+      "editImagePath",
+      predictedUploadPath(document.getElementById("editSku").value, editImageFile)
+    );
   }
 });
 

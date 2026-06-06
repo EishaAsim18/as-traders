@@ -234,9 +234,17 @@
               <div class="mt-3">
                 <label class="form-label small fw-semibold">Product image</label>
                 <p class="small text-muted mb-2">Upload JPG, PNG, WebP, or SVG — shown on the customer shop.</p>
-                <input type="file" class="form-control" id="newImageFile" accept="image/jpeg,image/png,image/webp,image/svg+xml" />
-                <div class="mt-2 rounded-3 border bg-light overflow-hidden" style="width:120px;height:120px">
-                  <img id="newImagePreview" src="assets/images/product-placeholder.svg" alt="Preview" class="w-100 h-100" style="object-fit:contain" />
+                <div class="row g-3 align-items-start">
+                  <div class="col-auto">
+                    <div class="rounded-3 border bg-light overflow-hidden" style="width:120px;height:120px">
+                      <img id="newImagePreview" src="assets/images/product-placeholder.svg" alt="Preview" class="w-100 h-100" style="object-fit:contain" />
+                    </div>
+                  </div>
+                  <div class="col">
+                    <input type="file" class="form-control" id="newImageFile" accept="image/jpeg,image/png,image/webp,image/svg+xml" />
+                    <p class="small text-muted mb-1 mt-2">Choose a file to upload.</p>
+                    <code id="newImagePath" class="small user-select-all text-break">/assets/images/products/</code>
+                  </div>
                 </div>
               </div>
             </form>
@@ -336,13 +344,16 @@
               </div>
               <div class="mt-3">
                 <label class="form-label small fw-semibold">Catalog image</label>
-                <div class="d-flex gap-3 align-items-start flex-wrap">
-                  <div class="rounded-3 border bg-light overflow-hidden flex-shrink-0" style="width:120px;height:120px">
-                    <img id="editImagePreview" src="assets/images/product-placeholder.svg" alt="Preview" class="w-100 h-100" style="object-fit:contain" />
+                <div class="row g-3 align-items-start">
+                  <div class="col-auto">
+                    <div class="rounded-3 border bg-light overflow-hidden" style="width:120px;height:120px">
+                      <img id="editImagePreview" src="assets/images/product-placeholder.svg" alt="Preview" class="w-100 h-100" style="object-fit:contain" />
+                    </div>
                   </div>
-                  <div class="flex-grow-1">
+                  <div class="col">
                     <input type="file" class="form-control" id="editImageFile" accept="image/jpeg,image/png,image/webp,image/svg+xml" />
-                    <p class="small text-muted mb-0 mt-2">Choose a new file to replace the current image.</p>
+                    <p class="small text-muted mb-1 mt-2">Choose a new file to replace the current image.</p>
+                    <code id="editImagePath" class="small user-select-all text-break">—</code>
                   </div>
                 </div>
               </div>
@@ -411,6 +422,6 @@
     <script src="assets/js/admin-ui.js"></script>
     <script src="assets/js/admin-common.js"></script>
     <script src="assets/js/product-pricing.js?v=4"></script>
-    <script src="assets/js/admin-inventory.js?v=10"></script>
+    <script src="assets/js/admin-inventory.js?v=11"></script>
   </body>
 </html>
