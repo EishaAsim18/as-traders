@@ -189,7 +189,8 @@ function openEditModal(product) {
   document.getElementById("editReorder").value = product.reorderLevel ?? 10;
   document.getElementById("editLocation").value = product.location || "";
   document.getElementById("editImagePreview").src = catalogImageSrc(product.imageUrl);
-  document.getElementById("editImageFile").value = "";
+  const editFileInput = document.getElementById("editImageFile");
+  if (editFileInput) editFileInput.value = "";
 
   new bootstrap.Modal(document.getElementById("editProductModal")).show();
 }
