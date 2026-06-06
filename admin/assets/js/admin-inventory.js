@@ -151,7 +151,6 @@ function resetNewImagePreview() {
   newImageFile = null;
   document.getElementById("newImagePreview").src = "../assets/images/product-placeholder.svg";
   document.getElementById("newImageFile").value = "";
-  document.getElementById("newImageUrl").value = "";
 }
 
 async function deleteProduct(product) {
@@ -190,7 +189,6 @@ function openEditModal(product) {
   document.getElementById("editReorder").value = product.reorderLevel ?? 10;
   document.getElementById("editLocation").value = product.location || "";
   document.getElementById("editImagePreview").src = catalogImageSrc(product.imageUrl);
-  document.getElementById("editImageUrl").value = product.imageUrl || "";
   document.getElementById("editImageFile").value = "";
 
   new bootstrap.Modal(document.getElementById("editProductModal")).show();
@@ -210,17 +208,12 @@ function applyQuickStock(amount) {
   input.value = current + amount;
 }
 
-async function resolveImageUrlForProduct(sku, file, urlInput) {
+async function resolveImageUrlForProduct(sku, file) {
   if (file) {
     const uploaded = await uploadProductImage(sku, file);
     return uploaded.imageUrl;
   }
-  const url = (urlInput || "").trim();
-  if (/^data:image\//i.test(url)) {
-    const uploaded = await apiPost("/products/upload-image", { sku: sku, dataUrl: url });
-    return uploaded.imageUrl;
-  }
-  return url;
+  return "";
 }
 
 async function saveAdjustStock() {
@@ -247,11 +240,9 @@ async function saveNewProduct() {
 
   let imageUrl = "";
   try {
-    imageUrl = await resolveImageUrlForProduct(
-      sku,
-      newImageFile,
-      document.getElementById("newImageUrl").value
-    );
+    if (newImageFile) {
+      imageUrl = await resolveImageUrlForProduct(sku, newImageFile);
+    }
   } catch (err) {
     showToast(err.message, "error");
     return;
@@ -291,10 +282,9 @@ async function saveEditProduct() {
   }
 
   let imageUrl = editingProduct.imageUrl || "";
-  const urlInput = document.getElementById("editImageUrl").value.trim();
   try {
-    if (editImageFile || urlInput) {
-      imageUrl = await resolveImageUrlForProduct(sku, editImageFile, urlInput);
+    if (editImageFile) {
+      imageUrl = await resolveImageUrlForProduct(sku, editImageFile);
     }
   } catch (err) {
     showToast(err.message, "error");
@@ -370,7 +360,6 @@ document.getElementById("newImageFile").addEventListener("change", function (e) 
   newImageFile = e.target.files[0] || null;
   if (newImageFile) {
     previewFile(newImageFile, document.getElementById("newImagePreview"));
-    document.getElementById("newImageUrl").value = "";
   }
 });
 

@@ -95,6 +95,16 @@ function validateProductData(data, isCreate) {
     }
   }
 
+  if (data.imageUrl !== undefined) {
+    const url = String(data.imageUrl).trim();
+    if (url && /^https?:\/\//i.test(url)) {
+      errors.push("External image URLs are not allowed — upload a file instead");
+    } else if (url && !/^data:image\//i.test(url) && !url.startsWith("/assets/")) {
+      errors.push("Product image must be uploaded as a file");
+    }
+    data.imageUrl = url;
+  }
+
   if (errors.length === 0) {
     if (isCreate && data.discountPercent === undefined) {
       data.discountPercent = 0;
