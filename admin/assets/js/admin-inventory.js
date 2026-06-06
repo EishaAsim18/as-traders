@@ -29,7 +29,8 @@ function updateStats() {
 }
 
 function productThumbHtml(p) {
-  const src = catalogImageSrc(p.imageUrl);
+  const version = p.updatedAt ? new Date(p.updatedAt).getTime() : "";
+  const src = catalogImageSrc(p.imageUrl, version);
   return (
     '<div class="rounded-2 border bg-light overflow-hidden" style="width:44px;height:44px">' +
     '<img src="' +
@@ -217,7 +218,10 @@ function openEditModal(product) {
   document.getElementById("editStock").value = product.stock;
   document.getElementById("editReorder").value = product.reorderLevel ?? 10;
   document.getElementById("editLocation").value = product.location || "";
-  document.getElementById("editImagePreview").src = catalogImageSrc(product.imageUrl);
+  document.getElementById("editImagePreview").src = catalogImageSrc(
+    product.imageUrl,
+    product.updatedAt ? new Date(product.updatedAt).getTime() : ""
+  );
   const editFileInput = document.getElementById("editImageFile");
   if (editFileInput) editFileInput.value = "";
   setImagePathLabel("editImagePath", product.imageUrl || "—");
@@ -348,6 +352,10 @@ async function saveEditProduct() {
   const saved = result.product || {};
   if (saved.imageUrl) {
     setImagePathLabel("editImagePath", saved.imageUrl);
+    document.getElementById("editImagePreview").src = catalogImageSrc(
+      saved.imageUrl,
+      saved.updatedAt ? new Date(saved.updatedAt).getTime() : Date.now()
+    );
   }
   let msg = "Product updated — visible on customer shop";
   if ((saved.discountPercent || 0) > 0) {

@@ -152,11 +152,26 @@ async function apiPut(path, body) {
   return data;
 }
 
-function catalogImageSrc(imageUrl) {
+function getAdminAssetBase() {
+  if (isLocalAdminHost()) return window.location.origin;
+  if (window.API_BASE_URL) return window.API_BASE_URL;
+  return ADMIN_PRODUCTION_API_URL;
+}
+
+function catalogImageSrc(imageUrl, cacheBust) {
   if (!imageUrl) return "../assets/images/product-placeholder.svg";
-  if (imageUrl.startsWith("/assets/")) return ".." + imageUrl;
-  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) return imageUrl;
-  return imageUrl;
+  var url;
+  if (imageUrl.startsWith("/assets/") || imageUrl.startsWith("/uploads/")) {
+    url = getAdminAssetBase() + imageUrl;
+  } else if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+    url = imageUrl;
+  } else {
+    return imageUrl;
+  }
+  if (cacheBust && url.indexOf("/assets/images/products/") !== -1) {
+    url += (url.indexOf("?") === -1 ? "?" : "&") + "v=" + encodeURIComponent(String(cacheBust));
+  }
+  return url;
 }
 
 function fileToDataUrl(file) {

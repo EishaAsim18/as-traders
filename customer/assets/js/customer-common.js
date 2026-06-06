@@ -131,15 +131,23 @@ function assetUrl(path) {
   return window.location.origin + "/" + p.replace(/^\/+/, "");
 }
 
+function productImageVersion(productOrImageUrl) {
+  if (typeof productOrImageUrl === "object" && productOrImageUrl && productOrImageUrl.updatedAt) {
+    return new Date(productOrImageUrl.updatedAt).getTime();
+  }
+  return null;
+}
+
 function resolveImageUrl(productOrImageUrl, sku) {
   const resolved = assetUrl(getProductImageUrl(productOrImageUrl, sku));
+  const version = productImageVersion(productOrImageUrl);
   if (
     resolved &&
     resolved.indexOf("/assets/images/products/") !== -1 &&
-    !isDataImageUrl(resolved) &&
-    resolved.indexOf("?") === -1
+    !isDataImageUrl(resolved)
   ) {
-    return resolved + "?v=2";
+    const sep = resolved.indexOf("?") === -1 ? "?" : "&";
+    return resolved + sep + "v=" + (version || Date.now());
   }
   return resolved;
 }

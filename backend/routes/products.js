@@ -23,13 +23,18 @@ router.post("/upload-image", async (req, res) => {
 
     const imageUrl = saveProductImage(dataUrl, sku);
     const skuNorm = String(sku).trim().toUpperCase();
-    const linked = await Product.updateOne({ sku: skuNorm }, { $set: { imageUrl } });
+    const product = await Product.findOne({ sku: skuNorm });
+    if (product) {
+      product.imageUrl = imageUrl;
+      await product.save();
+    }
     res.json({
-      message: linked.matchedCount
+      message: product
         ? "Image saved — linked to product and visible on shop"
         : "Image saved — add or save product with this SKU to show on shop",
       imageUrl,
-      linked: !!linked.matchedCount,
+      linked: !!product,
+      updatedAt: product ? product.updatedAt : null,
     });
   } catch (error) {
     res.status(400).json({ message: error.message || "Could not save image" });
