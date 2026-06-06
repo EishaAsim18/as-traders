@@ -169,6 +169,36 @@ function setImagePathLabel(elementId, value) {
   if (el) el.textContent = formatImagePathDisplay(value);
 }
 
+function updateEditImagePathDisplay() {
+  const sku = document.getElementById("editSku").value.trim();
+  const currentPath =
+    (editingProduct && editingProduct.imageUrl) || "—";
+  const pathEl = document.getElementById("editImagePath");
+  const noteEl = document.getElementById("editImagePathNote");
+  if (!pathEl) return;
+
+  if (editImageFile && sku) {
+    const nextPath = predictedUploadPath(sku, editImageFile);
+    pathEl.textContent = nextPath;
+    if (noteEl) {
+      noteEl.style.display = "block";
+      if (nextPath === currentPath) {
+        noteEl.textContent =
+          "New file selected — same path, image will replace the old file on Save.";
+      } else {
+        noteEl.textContent = "Path will update on Save.";
+      }
+    }
+    return;
+  }
+
+  pathEl.textContent = formatImagePathDisplay(currentPath);
+  if (noteEl) {
+    noteEl.style.display = "none";
+    noteEl.textContent = "";
+  }
+}
+
 function previewFile(file, imgEl) {
   if (!file) return;
   fileToDataUrl(file).then(function (url) {
@@ -224,7 +254,7 @@ function openEditModal(product) {
   );
   const editFileInput = document.getElementById("editImageFile");
   if (editFileInput) editFileInput.value = "";
-  setImagePathLabel("editImagePath", product.imageUrl || "—");
+  updateEditImagePathDisplay();
 
   new bootstrap.Modal(document.getElementById("editProductModal")).show();
 }
@@ -320,6 +350,10 @@ async function saveEditProduct() {
   try {
     if (editImageFile) {
       imageUrl = await resolveImageUrlForProduct(sku, editImageFile);
+      setImagePathLabel("editImagePath", imageUrl);
+      editingProduct.imageUrl = imageUrl;
+      editImageFile = null;
+      document.getElementById("editImageFile").value = "";
     }
   } catch (err) {
     showToast(err.message, "error");
@@ -344,19 +378,23 @@ async function saveEditProduct() {
     imageUrl: imageUrl,
   });
 
-  bootstrap.Modal.getInstance(document.getElementById("editProductModal")).hide();
-  editingProduct = null;
-  editImageFile = null;
-  await loadProducts();
-
   const saved = result.product || {};
   if (saved.imageUrl) {
+    editingProduct.imageUrl = saved.imageUrl;
     setImagePathLabel("editImagePath", saved.imageUrl);
     document.getElementById("editImagePreview").src = catalogImageSrc(
       saved.imageUrl,
       saved.updatedAt ? new Date(saved.updatedAt).getTime() : Date.now()
     );
+    const noteEl = document.getElementById("editImagePathNote");
+    if (noteEl) {
+      noteEl.style.display = "block";
+      noteEl.textContent = "Saved — visible on customer shop.";
+    }
   }
+
+  await loadProducts();
+
   let msg = "Product updated — visible on customer shop";
   if ((saved.discountPercent || 0) > 0) {
     msg +=
@@ -366,6 +404,12 @@ async function saveEditProduct() {
       formatMoney(saved.finalPrice || productSalePrice(saved));
   }
   showToast(msg, "success");
+
+  setTimeout(function () {
+    bootstrap.Modal.getInstance(document.getElementById("editProductModal")).hide();
+    editingProduct = null;
+    editImageFile = null;
+  }, 600);
 }
 
 function updateNewFinalPricePreview() {
@@ -419,11 +463,12 @@ document.getElementById("editImageFile").addEventListener("change", function (e)
   editImageFile = e.target.files[0] || null;
   if (editImageFile) {
     previewFile(editImageFile, document.getElementById("editImagePreview"));
-    setImagePathLabel(
-      "editImagePath",
-      predictedUploadPath(document.getElementById("editSku").value, editImageFile)
-    );
   }
+  updateEditImagePathDisplay();
+});
+
+document.getElementById("editSku").addEventListener("input", function () {
+  updateEditImagePathDisplay();
 });
 
 document.getElementById("btnSaveProduct").addEventListener("click", function () {
