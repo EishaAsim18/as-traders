@@ -1,21 +1,19 @@
 /**
  * Loads store contact from the Express backend.
- * Uses API_BASE_URL from config.js (Railway in production, localhost in dev).
+ * Uses API_BASE_URL from config.js when present; otherwise Railway in production.
  */
 (function () {
+  var PRODUCTION_API_URL = "https://fswd-production.up.railway.app";
+
   function getBackendOrigin() {
     if (typeof API_BASE_URL !== "undefined" && API_BASE_URL) {
       return API_BASE_URL;
     }
-    var loc = window.location;
-    var host = loc.hostname === "127.0.0.1" ? "127.0.0.1" : "localhost";
-    if (
-      (loc.protocol === "http:" || loc.protocol === "https:") &&
-      (loc.port === "3000" || loc.port === "")
-    ) {
-      return loc.origin;
+    var host = window.location.hostname;
+    if (host === "localhost" || host === "127.0.0.1") {
+      return "http://localhost:3000";
     }
-    return "http://" + host + ":3000";
+    return PRODUCTION_API_URL;
   }
 
   window.__AS_BACKEND_ORIGIN__ = getBackendOrigin();
@@ -24,6 +22,9 @@
   script.src = window.__AS_BACKEND_ORIGIN__ + "/api/public/store-config.js";
   script.onload = function () {
     window.dispatchEvent(new CustomEvent("as-store-contact-ready"));
+  };
+  script.onerror = function () {
+    console.warn("Store config script failed to load from", script.src);
   };
   document.head.appendChild(script);
 })();

@@ -52,13 +52,12 @@ The backend serves both the **customer site** (`/customer`) and **admin panel** 
 
 | # | Name | Role | Main contribution |
 |---|------|------|-------------------|
-| 1 | _Your name_ | Customer frontend | Shop, cart, checkout, login/register, track order, my orders, legal pages |
-| 2 | _Your name_ | Admin frontend | Dashboard, orders, inventory, billing, customers, account settings |
-| 3 | _Your name_ | Backend & API | Express routes, JWT auth, orders/invoices, PDF generation, file uploads |
-| 4 | _Your name_ | Database | MongoDB models, seed data, migrations, pricing logic |
-| 5 | _Your name_ | QA & integration | End-to-end testing, payment/COD flows, README, demo script |
+| 1 | Saleha Khurram | Customer frontend | Shop, cart, checkout, login/register, track order, my orders, legal pages |
+| 2 | Eisha Asim | Admin frontend | Dashboard, orders, inventory, billing, customers, account settings |
+| 3 | Izzat Rehman  | Backend & API | Express routes, JWT auth, orders/invoices, PDF generation, file uploads |
+| 4 | Sadia Noor  | Database | MongoDB models, seed data, migrations, pricing logic |
+| 5 | Rasba Mazhar | QA & integration | End-to-end testing, payment/COD flows, README, demo script |
 
-_Replace placeholder names before submission._
 
 ---
 

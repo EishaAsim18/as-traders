@@ -1,4 +1,5 @@
-const API = import.meta.env.DEV ? "/api" : "http://localhost:3000/api";
+const PRODUCTION_API = "https://fswd-production.up.railway.app/api";
+const API = import.meta.env.DEV ? "/api" : PRODUCTION_API;
 
 export function getToken() {
   return localStorage.getItem("adminToken");

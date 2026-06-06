@@ -6,7 +6,9 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const mongoose = require("mongoose");
 const connectDB = require("./db");
+const { isDbConnected } = require("./db");
 
 const authRoutes = require("./routes/auth");
 const productRoutes = require("./routes/products");
@@ -20,35 +22,128 @@ const customerRoutes = require("./routes/customers");
 const publicContactRoutes = require("./routes/publicContact");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
+const HOST = "0.0.0.0";
 
+const DEFAULT_CORS_ORIGINS = [
+  "https://fswd-iota.vercel.app",
+  "https://fswd-efrx.vercel.app",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+];
 
-app.use(express.json());
-app.use(cors({
-  origin: [
-    "https://fswd-iota.vercel.app",
-    "https://fswd-efrx.vercel.app"
-  ],
-  credentials: true
-}));
+function getAllowedOrigins() {
+  const fromEnv = (process.env.CORS_ORIGINS || "")
+    .split(",")
+    .map(function (value) {
+      return value.trim();
+    })
+    .filter(Boolean);
+  return DEFAULT_CORS_ORIGINS.concat(fromEnv);
+}
 
+function isOriginAllowed(origin) {
+  if (!origin) return true;
 
-app.use("/api/auth", authRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/invoices", invoiceRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/dashboard", dashboardRoutes);
-app.use("/api/public/products", publicProductRoutes);
-app.use("/api/public/orders", publicOrderRoutes);
-app.use("/api/public", publicContactRoutes);
-app.use("/api/public/customers", customerAuthRoutes);
-app.use("/api/customers", customerRoutes);
+  const allowed = getAllowedOrigins();
+  if (allowed.includes(origin)) return true;
 
-app.get("/api/health", (req, res) => {
-  res.json({ ok: true, message: "A & S Traders API is running", database: "mongodb" });
+  // Any Vercel preview or production deployment
+  if (/^https:\/\/[\w.-]+\.vercel\.app$/.test(origin)) return true;
+
+  // Railway static frontend (if served from same project)
+  if (/^https:\/\/[\w-]+\.up\.railway\.app$/.test(origin)) return true;
+
+  return false;
+}
+
+function validateEnv() {
+  const missing = [];
+  if (!process.env.MONGODB_URI) missing.push("MONGODB_URI");
+  if (!process.env.JWT_SECRET) missing.push("JWT_SECRET");
+
+  if (missing.length) {
+    console.error("Missing required environment variables:", missing.join(", "));
+    console.error("Set them in Railway → Variables before deploying.");
+  }
+
+  if (process.env.MONGODB_URI) {
+    if (
+      process.env.MONGODB_URI.includes("127.0.0.1") ||
+      process.env.MONGODB_URI.includes("localhost")
+    ) {
+      console.warn(
+        "WARNING: MONGODB_URI points to localhost — use MongoDB Atlas in production."
+      );
+    }
+  }
+}
+
+app.use(express.json({ limit: "10mb" }));
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (isOriginAllowed(origin)) {
+        return callback(null, true);
+      }
+      console.warn("[CORS] Blocked origin:", origin || "(none)");
+      return callback(null, false);
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+app.use(function (req, res, next) {
+  if (
+    req.path === "/api/public/products" ||
+    req.path === "/api/public/products/" ||
+    req.path === "/api/public/contact"
+  ) {
+    console.log(
+      "[public]",
+      req.method,
+      req.path,
+      "origin=" + (req.headers.origin || "-"),
+      "db=" + mongoose.connection.readyState
+    );
+  }
+  next();
 });
 
-app.get("/", (req, res) => {
+function requireDb(req, res, next) {
+  if (isDbConnected()) return next();
+  console.error("[DB] Request blocked — MongoDB not connected:", req.method, req.path);
+  return res.status(503).json({
+    message: "Database temporarily unavailable. Retry in a few seconds.",
+    database: "disconnected",
+  });
+}
+
+app.use("/api/auth", requireDb, authRoutes);
+app.use("/api/products", requireDb, productRoutes);
+app.use("/api/invoices", requireDb, invoiceRoutes);
+app.use("/api/orders", requireDb, orderRoutes);
+app.use("/api/dashboard", requireDb, dashboardRoutes);
+app.use("/api/public/products", requireDb, publicProductRoutes);
+app.use("/api/public/orders", requireDb, publicOrderRoutes);
+app.use("/api/public", requireDb, publicContactRoutes);
+app.use("/api/public/customers", requireDb, customerAuthRoutes);
+app.use("/api/customers", requireDb, customerRoutes);
+
+app.get("/api/health", function (req, res) {
+  const connected = isDbConnected();
+  res.status(connected ? 200 : 503).json({
+    ok: connected,
+    message: connected ? "A & S Traders API is running" : "API up but database not connected",
+    database: connected ? "connected" : "disconnected",
+    uptime: process.uptime(),
+  });
+});
+
+app.get("/", function (req, res) {
   res.redirect("/customer/index.html");
 });
 
@@ -58,19 +153,54 @@ app.use("/assets", express.static(path.join(__dirname, "..", "assets")));
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 app.use("/react-admin", express.static(path.join(__dirname, "react-admin", "dist")));
 
-async function start() {
-  await connectDB();
+app.use(function (err, req, res, _next) {
+  console.error("[error]", req.method, req.path, err.message);
+  if (!res.headersSent) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
 
-  app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
-    console.log(`Admin: http://localhost:${PORT}/admin/login.html`);
-    console.log(`Shop: http://localhost:${PORT}/customer/index.html`);
-    console.log(`Customer API: http://localhost:${PORT}/api/public/products`);
-    console.log(`API: http://localhost:${PORT}/api/health`);
-  });
+let dbRetryTimer = null;
+
+function scheduleDbRetry() {
+  if (dbRetryTimer) return;
+  dbRetryTimer = setInterval(async function () {
+    if (isDbConnected()) {
+      clearInterval(dbRetryTimer);
+      dbRetryTimer = null;
+      console.log("MongoDB reconnected.");
+      return;
+    }
+    try {
+      await connectDB();
+      clearInterval(dbRetryTimer);
+      dbRetryTimer = null;
+      console.log("MongoDB connected on retry.");
+    } catch (err) {
+      console.error("MongoDB retry failed:", err.message);
+    }
+  }, 10000);
 }
 
-start().catch((err) => {
+async function start() {
+  validateEnv();
+
+  app.listen(PORT, HOST, function () {
+    console.log("Server listening on " + HOST + ":" + PORT);
+    console.log("Health: /api/health");
+    console.log("CORS origins:", getAllowedOrigins().join(", "));
+  });
+
+  try {
+    await connectDB();
+  } catch (err) {
+    console.error("Initial MongoDB connection failed — retrying every 10s");
+    console.error(err.message);
+    scheduleDbRetry();
+  }
+}
+
+start().catch(function (err) {
   console.error("Failed to start server:", err.message);
   process.exit(1);
 });

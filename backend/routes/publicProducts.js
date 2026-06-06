@@ -22,12 +22,14 @@ router.get("/categories/list", async (req, res) => {
       brands: brands.filter(Boolean).sort(),
     });
   } catch (error) {
+    console.error("[GET /api/public/products/categories/list]", error.message);
     res.status(500).json({ message: "Could not load filters" });
   }
 });
 
 // Public shop — no login needed (read only)
 router.get("/", async (req, res) => {
+  const started = Date.now();
   try {
     const filter = {};
 
@@ -38,7 +40,7 @@ router.get("/", async (req, res) => {
       filter.brand = req.query.brand;
     }
     if (req.query.search) {
-      const search = req.query.search.trim();
+      const search = String(req.query.search).trim();
       filter.$or = [
         { name: { $regex: search, $options: "i" } },
         { sku: { $regex: search, $options: "i" } },
@@ -46,11 +48,17 @@ router.get("/", async (req, res) => {
     }
 
     const products = await Product.find(filter).sort({ name: 1 });
+    console.log(
+      "[GET /api/public/products]",
+      "count=" + products.length,
+      "ms=" + (Date.now() - started)
+    );
     res.json({
       count: products.length,
       products: products.map(withLowStockFlag),
     });
   } catch (error) {
+    console.error("[GET /api/public/products]", error.message, error.stack);
     res.status(500).json({ message: "Could not load products" });
   }
 });
@@ -58,12 +66,16 @@ router.get("/", async (req, res) => {
 // GET /api/public/products/:id
 router.get("/:id", async (req, res) => {
   try {
+    if (req.params.id === "categories") {
+      return res.status(404).json({ message: "Not found" });
+    }
     const product = await Product.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
     res.json(withLowStockFlag(product));
   } catch (error) {
+    console.error("[GET /api/public/products/:id]", req.params.id, error.message);
     res.status(500).json({ message: "Could not load product" });
   }
 });

@@ -12,6 +12,12 @@ function requireAdmin(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.role === "customer") {
+      return res.status(401).json({ message: "Admin login required" });
+    }
+    if (!decoded.id) {
+      return res.status(401).json({ message: "Invalid session" });
+    }
     req.adminId = decoded.id;
     next();
   } catch (error) {

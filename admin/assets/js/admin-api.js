@@ -1,10 +1,19 @@
-// Talk to the backend — uses API_BASE_URL from config.js (Railway in production, localhost in dev)
-const API_BASE =
-  typeof API_BASE_URL !== "undefined" && API_BASE_URL
-    ? API_BASE_URL + "/api"
-    : (window.location.protocol === "http:" || window.location.protocol === "https:"
-        ? window.location.origin + "/api"
-        : "http://localhost:3000/api");
+// Talk to the backend — Railway in production, same-origin on Railway admin, localhost in dev
+const PRODUCTION_API_BASE = "https://fswd-production.up.railway.app/api";
+
+const API_BASE = (function () {
+  if (typeof API_BASE_URL !== "undefined" && API_BASE_URL) {
+    return API_BASE_URL + "/api";
+  }
+  var host = window.location.hostname;
+  if (host === "localhost" || host === "127.0.0.1") {
+    return "http://localhost:3000/api";
+  }
+  if (host.endsWith(".up.railway.app")) {
+    return window.location.origin + "/api";
+  }
+  return PRODUCTION_API_BASE;
+})();
 
 function saveToken(token) {
   localStorage.setItem("adminToken", token);

@@ -12,7 +12,7 @@ function optionalCustomer(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (decoded.id) {
+    if (decoded.role === "customer" && decoded.id) {
       req.customerId = decoded.id;
     }
   } catch (error) {

@@ -32,7 +32,7 @@ router.get("/store-config.js", async (req, res) => {
     res.type("application/javascript");
     res.send("window.__STORE_CONTACT__=" + JSON.stringify(contact) + ";");
   } catch (error) {
-    console.error("Store config error:", error);
+    console.error("[GET /api/public/store-config.js]", error.message);
     res.type("application/javascript");
     res.send(
       "window.__STORE_CONTACT__=" + JSON.stringify({ phone: FALLBACK.phone, email: FALLBACK.email }) + ";"
@@ -42,22 +42,30 @@ router.get("/store-config.js", async (req, res) => {
 
 // GET /api/public/contact — shop phone/email from admin My account (public, read-only)
 router.get("/contact", async (req, res) => {
+  const started = Date.now();
   try {
     const admin = await loadShopAdmin();
 
     if (!admin) {
+      console.log("[GET /api/public/contact] no admin row — using fallback");
       return res.json({
         contact: FALLBACK,
         payment: paymentPublicFields(null),
       });
     }
 
+    console.log(
+      "[GET /api/public/contact]",
+      "admin=" + admin.email,
+      "ms=" + (Date.now() - started)
+    );
+
     res.json({
       contact: adminPublicFields(admin),
       payment: paymentPublicFields(admin.paymentSettings),
     });
   } catch (error) {
-    console.error("Public contact error:", error);
+    console.error("[GET /api/public/contact]", error.message, error.stack);
     res.status(500).json({ message: "Could not load contact details" });
   }
 });

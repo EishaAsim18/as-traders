@@ -12,22 +12,18 @@ const AUTH_HERO_IMAGE = "/assets/images/auth-showroom.jpg";
 const AUTH_HERO_FALLBACK = "/assets/images/auth-showroom.svg";
 
 const DEFAULT_BACKEND_PORT = "3000";
+const PRODUCTION_API_URL = "https://fswd-production.up.railway.app";
 
-/** Express API — uses API_BASE_URL from config.js (Railway in production, localhost in dev). */
+/** Express API — Railway in production, localhost in local dev. */
 function getBackendOrigin() {
   if (typeof API_BASE_URL !== "undefined" && API_BASE_URL) {
     return API_BASE_URL;
   }
-  // Fallback for local dev if config.js didn't load
-  const loc = window.location;
-  const host = loc.hostname === "127.0.0.1" ? "127.0.0.1" : "localhost";
-  if (
-    (loc.protocol === "http:" || loc.protocol === "https:") &&
-    (loc.port === DEFAULT_BACKEND_PORT || loc.port === "")
-  ) {
-    return loc.origin;
+  const host = window.location.hostname;
+  if (host === "localhost" || host === "127.0.0.1") {
+    return "http://localhost:" + DEFAULT_BACKEND_PORT;
   }
-  return "http://" + host + ":" + DEFAULT_BACKEND_PORT;
+  return PRODUCTION_API_URL;
 }
 
 function getPublicApiBase() {

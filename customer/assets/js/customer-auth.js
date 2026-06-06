@@ -391,7 +391,13 @@
       }
       img.dataset.fallback = "1";
       const backend =
-        typeof getBackendOrigin === "function" ? getBackendOrigin() : (typeof API_BASE_URL !== "undefined" ? API_BASE_URL : "http://localhost:3000");
+        typeof getBackendOrigin === "function"
+          ? getBackendOrigin()
+          : typeof API_BASE_URL !== "undefined"
+            ? API_BASE_URL
+            : window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+              ? "http://localhost:3000"
+              : "https://fswd-production.up.railway.app";
       const fallback =
         typeof assetUrl === "function"
           ? assetUrl(fallbackPath)

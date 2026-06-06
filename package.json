@@ -1,0 +1,11 @@
+{
+  "name": "as-traders",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node backend/server.js",
+    "postinstall": "npm install --prefix backend"
+  }
+}

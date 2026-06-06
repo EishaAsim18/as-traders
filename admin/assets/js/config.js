@@ -1,8 +1,11 @@
 /**
- * API_BASE_URL — points to the Railway backend in production,
- * and to localhost:3000 during local development.
+ * Backend API origin — Railway in production, localhost in local dev.
  */
-const API_BASE_URL =
-  window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://localhost:3000"
-    : "https://fswd-production.up.railway.app";
+const PRODUCTION_API_URL = "https://fswd-production.up.railway.app";
+
+function isLocalDevHost() {
+  const host = window.location.hostname;
+  return host === "localhost" || host === "127.0.0.1";
+}
+
+const API_BASE_URL = isLocalDevHost() ? "http://localhost:3000" : PRODUCTION_API_URL;

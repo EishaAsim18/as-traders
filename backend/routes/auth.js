@@ -33,7 +33,7 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Wrong email or password" });
     }
 
-    const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: admin._id, role: "admin" }, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
 
