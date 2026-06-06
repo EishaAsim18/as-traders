@@ -33,9 +33,9 @@ const allowedOrigins = (process.env.CORS_ORIGINS || "")
   .filter(Boolean);
 
 function getAllowedOrigins() {
+  // Production URLs are set via CORS_ORIGINS env var in Railway
+  // e.g. CORS_ORIGINS=https://your-admin.vercel.app,https://your-customer.vercel.app
   const defaults = [
-    "https://fswd-iota.vercel.app",
-    "https://fswd-efrx.vercel.app",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
   ];
