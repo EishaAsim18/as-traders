@@ -330,7 +330,10 @@ body {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
+  padding: 0.75rem;
+  background: #f8fafc;
 }
 
 .card-product .ratio .product-catalog-img--contain {
@@ -353,7 +356,10 @@ body {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
+  padding: 0.35rem;
+  background: #f8fafc;
 }
 
 .cart-thumb-wrap .product-catalog-img--contain {
