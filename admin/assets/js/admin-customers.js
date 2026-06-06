@@ -3,11 +3,14 @@
 let currentCustomer = null;
 let searchTimer = null;
 
-function customerStatusBadge(isBlocked) {
+function customerStatusBadge(isBlocked, isGuest) {
+  if (isGuest) {
+    return '<span class="badge-status bg-secondary-subtle text-secondary-emphasis">Guest</span>';
+  }
   if (isBlocked) {
     return '<span class="badge-status bg-danger-subtle text-danger-emphasis">Blocked</span>';
   }
-  return '<span class="badge-status bg-success-subtle text-success-emphasis">Active</span>';
+  return '<span class="badge-status bg-success-subtle text-success-emphasis">Registered</span>';
 }
 
 function orderStatusLabel(status) {
@@ -60,7 +63,7 @@ function renderCustomersTable(customers) {
       c.orderCount +
       "</td>" +
       "<td>" +
-      customerStatusBadge(c.isBlocked) +
+      customerStatusBadge(c.isBlocked, c.isGuest) +
       "</td>" +
       "<td class='text-end'>" +
       '<button type="button" class="btn btn-sm btn-outline-primary btn-view-customer" data-id="' +
@@ -105,6 +108,12 @@ function updateBlockButtons(customer) {
   const blockBtn = document.getElementById("btnBlockCustomer");
   const unblockBtn = document.getElementById("btnUnblockCustomer");
 
+  if (customer.isGuest) {
+    blockBtn.classList.add("d-none");
+    unblockBtn.classList.add("d-none");
+    return;
+  }
+
   if (customer.isBlocked) {
     blockBtn.classList.add("d-none");
     unblockBtn.classList.remove("d-none");
@@ -119,10 +128,15 @@ function renderCustomerModal(customer) {
 
   document.getElementById("modalCustomerName").textContent = customer.name;
   document.getElementById("modalCustomerEmail").textContent = customer.email;
-  document.getElementById("modalCustomerStatus").innerHTML = customerStatusBadge(customer.isBlocked);
+  document.getElementById("modalCustomerStatus").innerHTML = customerStatusBadge(
+    customer.isBlocked,
+    customer.isGuest
+  );
   document.getElementById("modalCustomerPhone").textContent = customer.phone || "—";
   document.getElementById("modalCustomerAddress").textContent = customer.address || "—";
-  document.getElementById("modalCustomerSince").textContent = formatDate(customer.createdAt);
+  document.getElementById("modalCustomerSince").textContent = customer.isGuest
+    ? "First order · " + formatDate(customer.createdAt)
+    : formatDate(customer.createdAt);
   document.getElementById("modalCustomerOrderCount").textContent = String(customer.orderCount);
 
   renderPurchaseHistory(customer.orders || []);
@@ -136,7 +150,7 @@ async function openCustomerModal(customerId) {
   modal.show();
 
   try {
-    const data = await apiGet("/customers/" + customerId);
+    const data = await apiGet("/customers/" + encodeURIComponent(customerId));
     renderCustomerModal(data.customer);
   } catch (err) {
     showToast(err.message || "Could not load customer", "error");
@@ -152,7 +166,7 @@ async function setCustomerBlocked(blocked) {
     return;
   }
 
-  const data = await apiPatch("/customers/" + customerId + "/block", { blocked: blocked });
+  const data = await apiPatch("/customers/" + encodeURIComponent(customerId) + "/block", { blocked: blocked });
   if (!data) return;
 
   showToast(data.message, "success");
