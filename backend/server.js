@@ -25,34 +25,35 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = "0.0.0.0";
 
-const DEFAULT_CORS_ORIGINS = [
-  "https://fswd-iota.vercel.app",
-  "https://fswd-efrx.vercel.app",
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-];
+const allowedOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map(function (origin) {
+    return origin.trim();
+  })
+  .filter(Boolean);
 
 function getAllowedOrigins() {
-  const fromEnv = (process.env.CORS_ORIGINS || "")
-    .split(",")
-    .map(function (value) {
-      return value.trim();
-    })
-    .filter(Boolean);
-  return DEFAULT_CORS_ORIGINS.concat(fromEnv);
+  const defaults = [
+    "https://fswd-iota.vercel.app",
+    "https://fswd-efrx.vercel.app",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+  ];
+  return defaults.concat(allowedOrigins);
 }
 
-function isOriginAllowed(origin) {
+function isAllowedOrigin(origin) {
   if (!origin) return true;
 
-  const allowed = getAllowedOrigins();
-  if (allowed.includes(origin)) return true;
+  if (getAllowedOrigins().includes(origin)) return true;
 
-  // Any Vercel preview or production deployment
-  if (/^https:\/\/[\w.-]+\.vercel\.app$/.test(origin)) return true;
+  if (/^https:\/\/[a-zA-Z0-9.-]+\.vercel\.app$/.test(origin)) {
+    return true;
+  }
 
-  // Railway static frontend (if served from same project)
-  if (/^https:\/\/[\w-]+\.up\.railway\.app$/.test(origin)) return true;
+  if (/^https:\/\/[a-zA-Z0-9-]+\.up\.railway\.app$/.test(origin)) {
+    return true;
+  }
 
   return false;
 }
@@ -81,20 +82,18 @@ function validateEnv() {
 
 app.use(express.json({ limit: "10mb" }));
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (isOriginAllowed(origin)) {
-        return callback(null, true);
-      }
-      console.warn("[CORS] Blocked origin:", origin || "(none)");
-      return callback(null, false);
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (isAllowedOrigin(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("Not allowed by CORS: " + origin));
+  },
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 app.use(function (req, res, next) {
   if (
