@@ -38,15 +38,26 @@ async function sendEmail(options) {
     return { sent: false, reason: "smtp_not_configured" };
   }
 
-  await transport.sendMail({
-    from: mailFrom(),
-    to: options.to,
-    subject: options.subject,
-    text: options.text,
-    html: options.html,
-  });
-
-  return { sent: true };
+  try {
+    await transport.sendMail({
+      from: mailFrom(),
+      to: options.to,
+      subject: options.subject,
+      text: options.text,
+      html: options.html,
+    });
+    return { sent: true };
+  } catch (error) {
+    console.error("[email] Send failed:", error.message || error);
+    if (options.resetUrl) {
+      console.warn("[email] Password reset link:", options.resetUrl);
+    }
+    return {
+      sent: false,
+      reason: "send_failed",
+      message: error.message || "Could not send email",
+    };
+  }
 }
 
 function buildPasswordResetEmail(params) {

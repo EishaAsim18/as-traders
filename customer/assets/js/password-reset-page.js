@@ -55,16 +55,9 @@
 
         try {
           const data = await publicPost("/customers/forgot-password", { email: email });
-          showAlert("forgotAlert", data.message || "Check your email for the reset link.", "success");
+          showAlert("forgotAlert", data.message || "Check your email for the reset link.", data.resetUrl ? "warning" : "success");
           if (data.resetUrl) {
             showResetLink("forgotResetLink", data.resetUrl);
-          } else if (data.emailConfigured === false) {
-            showAlert(
-              "forgotAlert",
-              (data.message || "") +
-                " If you have an account, contact A & S Traders — email sending is not set up yet.",
-              "warning"
-            );
           }
           forgotForm.classList.add("d-none");
         } catch (err) {

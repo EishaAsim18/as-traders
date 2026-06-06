@@ -76,7 +76,7 @@ async function issueCustomerPasswordReset(customer) {
     ttlMs: RESET_TTL_MS,
   });
 
-  await sendEmail({
+  const mailResult = await sendEmail({
     to: customer.email,
     subject: "Reset your A & S Traders password",
     text: emailBody.text,
@@ -84,7 +84,7 @@ async function issueCustomerPasswordReset(customer) {
     resetUrl: resetUrl,
   });
 
-  return resetUrl;
+  return { resetUrl: resetUrl, emailSent: !!mailResult.sent };
 }
 
 // POST /api/public/customers/register
@@ -170,18 +170,24 @@ router.post("/forgot-password", async (req, res) => {
 
     const customer = await Customer.findOne({ email: check.data.email });
     let resetUrl = null;
+    let emailSent = false;
     if (customer && !customer.isBlocked) {
-      resetUrl = await issueCustomerPasswordReset(customer);
+      const issued = await issueCustomerPasswordReset(customer);
+      resetUrl = issued.resetUrl;
+      emailSent = issued.emailSent;
     }
 
     const payload = {
       message: FORGOT_PASSWORD_MESSAGE,
       emailConfigured: isEmailConfigured(),
+      emailSent: emailSent,
     };
-    if (!isEmailConfigured() && resetUrl) {
+
+    if (resetUrl && (!emailSent || !isEmailConfigured())) {
       payload.resetUrl = resetUrl;
-      payload.message =
-        "Email is not configured on the server. Use this reset link now (valid for 1 hour):";
+      payload.message = emailSent
+        ? FORGOT_PASSWORD_MESSAGE
+        : "We could not send email (check SMTP settings). Use this reset link now (valid for 1 hour):";
     }
 
     res.json(payload);
