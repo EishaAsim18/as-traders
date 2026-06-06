@@ -8,9 +8,7 @@ const {
   hashPasswordResetToken,
   passwordResetTokenValid,
   clearPasswordResetFields,
-  RESET_TTL_MS,
 } = require("../utils/passwordReset");
-const { sendEmail, buildPasswordResetEmail, isEmailConfigured } = require("../utils/sendEmail");
 const requireCustomer = require("../middleware/requireCustomer");
 const { fetchOrdersForCustomer } = require("../utils/customerAdmin");
 const { statusLabel, normalizeStatus } = require("../utils/orderStatus");
@@ -55,8 +53,8 @@ function blockedResponse(res) {
   });
 }
 
-const FORGOT_PASSWORD_MESSAGE =
-  "If an account exists with that email, we sent password reset instructions.";
+const FORGOT_PASSWORD_FOUND =
+  "Account found. Use the link below to choose a new password (valid for 1 hour).";
 
 function customerSiteUrl() {
   return (process.env.CUSTOMER_SITE_URL || "https://as-traders.vercel.app").replace(/\/$/, "");
@@ -68,23 +66,9 @@ async function issueCustomerPasswordReset(customer) {
   customer.passwordResetExpires = reset.expiresAt;
   await customer.save();
 
-  const resetUrl =
-    customerSiteUrl() + "/reset-password.html?token=" + encodeURIComponent(reset.token);
-  const emailBody = buildPasswordResetEmail({
-    name: customer.firstName,
-    resetUrl: resetUrl,
-    ttlMs: RESET_TTL_MS,
-  });
-
-  const mailResult = await sendEmail({
-    to: customer.email,
-    subject: "Reset your A & S Traders password",
-    text: emailBody.text,
-    html: emailBody.html,
-    resetUrl: resetUrl,
-  });
-
-  return { resetUrl: resetUrl, emailSent: !!mailResult.sent };
+  return (
+    customerSiteUrl() + "/reset-password.html?token=" + encodeURIComponent(reset.token)
+  );
 }
 
 // POST /api/public/customers/register
@@ -169,28 +153,23 @@ router.post("/forgot-password", async (req, res) => {
     if (!check.ok) return validationError(res, check.errors);
 
     const customer = await Customer.findOne({ email: check.data.email });
-    let resetUrl = null;
-    let emailSent = false;
-    if (customer && !customer.isBlocked) {
-      const issued = await issueCustomerPasswordReset(customer);
-      resetUrl = issued.resetUrl;
-      emailSent = issued.emailSent;
+    if (!customer) {
+      return res.status(404).json({
+        message: "No account found with this email. Register first or check the spelling.",
+        errors: [{ field: "email", message: "Email is not registered" }],
+      });
     }
 
-    const payload = {
-      message: FORGOT_PASSWORD_MESSAGE,
-      emailConfigured: isEmailConfigured(),
-      emailSent: emailSent,
-    };
-
-    if (resetUrl && (!emailSent || !isEmailConfigured())) {
-      payload.resetUrl = resetUrl;
-      payload.message = emailSent
-        ? FORGOT_PASSWORD_MESSAGE
-        : "We could not send email (check SMTP settings). Use this reset link now (valid for 1 hour):";
+    if (customer.isBlocked) {
+      return blockedResponse(res);
     }
 
-    res.json(payload);
+    const resetUrl = await issueCustomerPasswordReset(customer);
+
+    res.json({
+      message: FORGOT_PASSWORD_FOUND,
+      resetUrl: resetUrl,
+    });
   } catch (error) {
     console.error("Customer forgot password error:", error);
     res.status(500).json({ message: "Could not process reset request" });

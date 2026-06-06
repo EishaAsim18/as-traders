@@ -51,20 +51,20 @@
         }
 
         btn.disabled = true;
-        btn.textContent = "Sending…";
+        btn.textContent = "Checking…";
 
         try {
           const data = await publicPost("/customers/forgot-password", { email: email });
-          showAlert("forgotAlert", data.message || "Check your email for the reset link.", data.resetUrl ? "warning" : "success");
+          showAlert("forgotAlert", data.message || "Use the link below to reset your password.", "success");
           if (data.resetUrl) {
             showResetLink("forgotResetLink", data.resetUrl);
           }
           forgotForm.classList.add("d-none");
         } catch (err) {
-          showAlert("forgotAlert", err.message || "Could not send reset link", "danger");
+          showAlert("forgotAlert", err.message || "Could not start password reset", "danger");
         } finally {
           btn.disabled = false;
-          btn.textContent = "Send reset link";
+          btn.textContent = "Continue";
         }
       });
     }

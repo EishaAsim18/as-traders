@@ -14,15 +14,13 @@ const {
   hashPasswordResetToken,
   passwordResetTokenValid,
   clearPasswordResetFields,
-  RESET_TTL_MS,
 } = require("../utils/passwordReset");
-const { sendEmail, buildPasswordResetEmail, isEmailConfigured } = require("../utils/sendEmail");
 const { validatePaymentSettings } = require("../utils/paymentSettings");
 
 const router = express.Router();
 
-const FORGOT_PASSWORD_MESSAGE =
-  "If an account exists with that email, we sent password reset instructions.";
+const FORGOT_PASSWORD_FOUND =
+  "Account found. Use the link below to choose a new password (valid for 1 hour).";
 
 function adminSiteUrl() {
   return (process.env.ADMIN_SITE_URL || "https://as-traders-admin.vercel.app").replace(/\/$/, "");
@@ -34,22 +32,7 @@ async function issueAdminPasswordReset(admin) {
   admin.passwordResetExpires = reset.expiresAt;
   await admin.save();
 
-  const resetUrl = adminSiteUrl() + "/reset-password.html?token=" + encodeURIComponent(reset.token);
-  const emailBody = buildPasswordResetEmail({
-    name: admin.name,
-    resetUrl: resetUrl,
-    ttlMs: RESET_TTL_MS,
-  });
-
-  const mailResult = await sendEmail({
-    to: admin.email,
-    subject: "Reset your A & S Traders admin password",
-    text: emailBody.text,
-    html: emailBody.html,
-    resetUrl: resetUrl,
-  });
-
-  return { resetUrl: resetUrl, emailSent: !!mailResult.sent };
+  return adminSiteUrl() + "/reset-password.html?token=" + encodeURIComponent(reset.token);
 }
 
 // POST /api/auth/login
@@ -100,28 +83,19 @@ router.post("/forgot-password", async (req, res) => {
     }
 
     const admin = await Admin.findOne({ email: check.data.email });
-    let resetUrl = null;
-    let emailSent = false;
-    if (admin) {
-      const issued = await issueAdminPasswordReset(admin);
-      resetUrl = issued.resetUrl;
-      emailSent = issued.emailSent;
+    if (!admin) {
+      return res.status(404).json({
+        message: "No admin account found with this email.",
+        errors: [{ field: "email", message: "Email is not registered" }],
+      });
     }
 
-    const payload = {
-      message: FORGOT_PASSWORD_MESSAGE,
-      emailConfigured: isEmailConfigured(),
-      emailSent: emailSent,
-    };
+    const resetUrl = await issueAdminPasswordReset(admin);
 
-    if (resetUrl && (!emailSent || !isEmailConfigured())) {
-      payload.resetUrl = resetUrl;
-      payload.message = emailSent
-        ? FORGOT_PASSWORD_MESSAGE
-        : "We could not send email (check SMTP settings). Use this reset link now (valid for 1 hour):";
-    }
-
-    res.json(payload);
+    res.json({
+      message: FORGOT_PASSWORD_FOUND,
+      resetUrl: resetUrl,
+    });
   } catch (error) {
     console.error("Admin forgot password error:", error);
     res.status(500).json({ message: "Could not process reset request" });
