@@ -331,6 +331,8 @@ router.post("/payment-proof", async (req, res) => {
     order.paymentProofUploadedAt = new Date();
     order.paymentProofTxnId = proofValidation.txnId;
     order.paymentProofAmount = proofValidation.paidAmount;
+    order.paymentProofChannel = proofValidation.paymentMethod;
+    order.paymentProofBank = proofValidation.bankName || "";
     order.paymentProofSender = proofValidation.senderNote || "";
     order.paymentProofChecks = proofValidation.checks;
     if (!order.paymentNote) {

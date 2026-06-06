@@ -222,6 +222,11 @@ if (document.getElementById("checkoutPaymentPicker")) {
   });
 }
 
+var successProofPaymentForm =
+  typeof initProofPaymentControls === "function"
+    ? initProofPaymentControls({ prefix: "successProof", txnInputId: "successProofTxn" })
+    : null;
+
 function updateSuccessTrackLink(hasProof) {
   const link = document.getElementById("trackOrderLink");
   if (!link || !lastPlacedOrder) return;
@@ -261,11 +266,20 @@ if (btnSuccessProof) {
   if (!lastPlacedOrder) return;
 
   const file = fileInput && fileInput.files[0];
+  const proofMethod =
+    successProofPaymentForm && successProofPaymentForm.getPaymentMethod
+      ? successProofPaymentForm.getPaymentMethod()
+      : lastPlacedOrder.paymentMethod;
+  const proofBank =
+    successProofPaymentForm && successProofPaymentForm.getBankName
+      ? successProofPaymentForm.getBankName()
+      : "";
   const fieldCheck = validatePaymentProofFields({
     transactionId: txnInput ? txnInput.value : "",
     paidAmount: amountInput ? amountInput.value : "",
     orderAmount: lastPlacedOrder.amount,
-    paymentMethod: lastPlacedOrder.paymentMethod,
+    paymentMethod: proofMethod,
+    bankName: proofBank,
     file: file,
   });
   if (!fieldCheck.ok) {
@@ -288,6 +302,8 @@ if (btnSuccessProof) {
     const result = await publicPost("/orders/payment-proof", {
       orderNumber: lastPlacedOrder.orderNumber,
       phoneLast4: digits,
+      paymentMethod: fieldCheck.paymentMethod,
+      bankName: fieldCheck.bankName,
       transactionId: fieldCheck.transactionId,
       paidAmount: fieldCheck.paidAmount,
       senderNote: fieldCheck.senderNote,
@@ -378,9 +394,14 @@ document.getElementById("checkoutForm").addEventListener("submit", async functio
         if (amountInput) amountInput.value = String(data.order.amount || "");
         const txnInput = document.getElementById("successProofTxn");
         if (txnInput) txnInput.value = "";
+        if (successProofPaymentForm && successProofPaymentForm.setPaymentMethod) {
+          successProofPaymentForm.setPaymentMethod(method);
+        }
         if (typeof wireTransactionIdValidation === "function") {
           wireTransactionIdValidation("successProofTxn", function () {
-            return lastPlacedOrder ? lastPlacedOrder.paymentMethod : "bank_transfer";
+            return successProofPaymentForm
+              ? successProofPaymentForm.getPaymentMethod()
+              : method;
           });
         }
       } else if (proofBox) {

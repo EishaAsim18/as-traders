@@ -163,8 +163,152 @@ function wireTransactionIdValidation(inputId, getPaymentMethod) {
   input.addEventListener("blur", validateLive);
 }
 
+var PK_SENDER_BANKS = [
+  "Habib Bank Limited (HBL)",
+  "United Bank Limited (UBL)",
+  "MCB Bank",
+  "Meezan Bank",
+  "Allied Bank",
+  "Bank Alfalah",
+  "Faysal Bank",
+  "JS Bank",
+  "Askari Bank",
+  "Soneri Bank",
+  "Summit Bank",
+  "Silk Bank",
+  "Bank of Punjab (BOP)",
+  "National Bank of Pakistan (NBP)",
+  "Standard Chartered",
+  "Other",
+];
+
+function fillProofBankSelect(selectEl) {
+  if (!selectEl || selectEl.options.length > 1) return;
+  selectEl.innerHTML = '<option value="">Select bank…</option>';
+  PK_SENDER_BANKS.forEach(function (name) {
+    var opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    selectEl.appendChild(opt);
+  });
+}
+
+function initProofPaymentControls(options) {
+  var opts = options || {};
+  var prefix = opts.prefix || "proof";
+  var pickerId = prefix + "PaymentPicker";
+  var hiddenId = prefix + "PaymentMethod";
+  var bankWrapId = prefix + "BankWrap";
+  var bankSelectId = prefix + "Bank";
+  var bankOtherWrapId = prefix + "BankOtherWrap";
+  var bankOtherId = prefix + "BankOther";
+  var getTxnInputId = opts.txnInputId || prefix + "Txn";
+
+  var bankWrap = document.getElementById(bankWrapId);
+  var bankSelect = document.getElementById(bankSelectId);
+  var bankOtherWrap = document.getElementById(bankOtherWrapId);
+  var bankOther = document.getElementById(bankOtherId);
+
+  if (bankSelect) fillProofBankSelect(bankSelect);
+
+  function syncBankVisibility(method) {
+    var isBank = normalizePaymentMethod(method) === "bank_transfer";
+    if (bankWrap) bankWrap.classList.toggle("d-none", !isBank);
+    if (!isBank && bankSelect) bankSelect.value = "";
+    if (!isBank && bankOther) bankOther.value = "";
+    if (bankOtherWrap) bankOtherWrap.classList.add("d-none");
+  }
+
+  function syncBankOtherVisibility() {
+    if (!bankSelect || !bankOtherWrap) return;
+    bankOtherWrap.classList.toggle("d-none", bankSelect.value !== "Other");
+    if (bankSelect.value !== "Other" && bankOther) bankOther.value = "";
+  }
+
+  if (bankSelect) {
+    bankSelect.addEventListener("change", syncBankOtherVisibility);
+  }
+
+  var picker = null;
+  if (typeof initPaymentMethodPicker === "function") {
+    picker = initPaymentMethodPicker(pickerId, {
+      hiddenInputId: hiddenId,
+      defaultMethod: opts.defaultMethod || "bank_transfer",
+      methods: ["bank_transfer", "jazzcash", "easypaisa"],
+      onChange: function (method) {
+        syncBankVisibility(method);
+        if (typeof wireTransactionIdValidation === "function") {
+          wireTransactionIdValidation(getTxnInputId, function () {
+            return getProofPaymentMethod(prefix);
+          });
+        }
+      },
+    });
+    syncBankVisibility(picker.getValue());
+  }
+
+  return {
+    prefix: prefix,
+    getPaymentMethod: function () {
+      return getProofPaymentMethod(prefix);
+    },
+    getBankName: function () {
+      return getProofBankName(prefix);
+    },
+    setPaymentMethod: function (method) {
+      if (picker) picker.setValue(method);
+      syncBankVisibility(method);
+    },
+  };
+}
+
+function getProofPaymentMethod(prefix) {
+  var hidden = document.getElementById(prefix + "PaymentMethod");
+  if (hidden && hidden.value) return hidden.value;
+  return "bank_transfer";
+}
+
+function getProofBankName(prefix) {
+  var method = normalizePaymentMethod(getProofPaymentMethod(prefix));
+  if (method !== "bank_transfer") return "";
+
+  var select = document.getElementById(prefix + "Bank");
+  if (!select || !select.value) return "";
+
+  if (select.value === "Other") {
+    var other = document.getElementById(prefix + "BankOther");
+    return other ? String(other.value || "").trim() : "";
+  }
+  return select.value;
+}
+
+function validateProofPaymentChannel(fields) {
+  var method = normalizePaymentMethod(fields.paymentMethod);
+  if (!method || method === "cod") {
+    return { ok: false, message: "Select how you paid — JazzCash, Easypaisa, or Bank" };
+  }
+  if (method === "bank_transfer") {
+    var bank = String(fields.bankName || "").trim();
+    if (!bank) {
+      return { ok: false, message: "Select which bank you paid from" };
+    }
+    if (bank.length < 2) {
+      return { ok: false, message: "Enter your bank name" };
+    }
+    if (bank.length > 120) {
+      return { ok: false, message: "Bank name is too long" };
+    }
+  }
+  return { ok: true, paymentMethod: method, bankName: method === "bank_transfer" ? String(fields.bankName || "").trim() : "" };
+}
+
 function validatePaymentProofFields(fields) {
-  var txnCheck = validateTransactionId(fields.transactionId, fields.paymentMethod);
+  var channelCheck = validateProofPaymentChannel(fields);
+  if (!channelCheck.ok) {
+    return channelCheck;
+  }
+
+  var txnCheck = validateTransactionId(fields.transactionId, channelCheck.paymentMethod);
   if (!txnCheck.ok) {
     return txnCheck;
   }
@@ -189,6 +333,8 @@ function validatePaymentProofFields(fields) {
     ok: true,
     transactionId: txnCheck.transactionId,
     paidAmount: paidAmount,
+    paymentMethod: channelCheck.paymentMethod,
+    bankName: channelCheck.bankName,
     senderNote: String(fields.senderNote || "").trim().slice(0, 80),
   };
 }

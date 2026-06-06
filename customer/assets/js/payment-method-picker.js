@@ -26,7 +26,14 @@ function initPaymentMethodPicker(container, options) {
     el.setAttribute("role", "group");
     el.setAttribute("aria-label", "Payment method");
 
-    PAYMENT_OPTIONS.forEach(function (opt) {
+    var list = PAYMENT_OPTIONS;
+    if (opts.methods && opts.methods.length) {
+      list = PAYMENT_OPTIONS.filter(function (opt) {
+        return opts.methods.indexOf(opt.id) !== -1;
+      });
+    }
+
+    list.forEach(function (opt) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className =

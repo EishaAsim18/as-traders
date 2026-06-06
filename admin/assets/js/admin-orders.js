@@ -56,6 +56,25 @@ function renderPaymentProofChecks(order) {
         "</code></div>"
     );
   }
+  if (order.paymentProofChannel) {
+    var channelLabel =
+      order.paymentProofChannel === "bank_transfer"
+        ? "Bank transfer"
+        : order.paymentProofChannel === "jazzcash"
+          ? "JazzCash"
+          : order.paymentProofChannel === "easypaisa"
+            ? "Easypaisa"
+            : order.paymentProofChannel;
+    lines.push(
+      '<div class="mb-1"><span class="text-muted">Paid via:</span> <strong>' +
+        channelLabel +
+        "</strong>" +
+        (order.paymentProofBank
+          ? ' <span class="text-muted">· ' + order.paymentProofBank + "</span>"
+          : "") +
+        "</div>"
+    );
+  }
   if (order.paymentProofAmount != null) {
     lines.push(
       '<div class="mb-1"><span class="text-muted">Customer declared:</span> <strong>' +

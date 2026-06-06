@@ -229,9 +229,25 @@
             <div id="successProofUpload" class="text-start border rounded-3 p-3 bg-light mb-3 d-none">
               <p class="small fw-semibold mb-2">Upload payment screenshot</p>
               <p class="small text-muted mb-2">
-                After bank / JazzCash / Easypaisa transfer, enter the same transaction ID and amount shown on your screenshot, then upload the image.
+                Select how you paid, enter the transaction ID and amount from your receipt, then upload the screenshot.
               </p>
-              <label for="successProofTxn" class="form-label small fw-semibold mb-1">Transaction / TID</label>
+              <label class="form-label small fw-semibold mb-1">How did you pay? *</label>
+              <div id="successProofPaymentPicker" class="mb-2"></div>
+              <input type="hidden" id="successProofPaymentMethod" value="bank_transfer" />
+              <div id="successProofBankWrap" class="mb-2">
+                <label for="successProofBank" class="form-label small fw-semibold mb-1">Which bank did you pay from? *</label>
+                <select class="form-select form-select-sm mb-2" id="successProofBank"></select>
+                <div id="successProofBankOtherWrap" class="d-none">
+                  <input
+                    type="text"
+                    class="form-control form-control-sm"
+                    id="successProofBankOther"
+                    maxlength="120"
+                    placeholder="Bank name"
+                  />
+                </div>
+              </div>
+              <label for="successProofTxn" class="form-label small fw-semibold mb-1">Transaction / TID *</label>
               <input type="text" class="form-control form-control-sm mb-2" id="successProofTxn" autocomplete="off" required />
               <label for="successProofAmount" class="form-label small fw-semibold mb-1">Amount paid (PKR)</label>
               <input type="number" class="form-control form-control-sm mb-2" id="successProofAmount" min="1" step="1" />
@@ -258,11 +274,11 @@
     <script src="assets/js/product-pricing.js?v=4"></script>
     <script src="assets/js/customer-common.js?v=23"></script>
     <script src="assets/js/payment-options.js?v=2"></script>
-    <script src="assets/js/payment-method-picker.js?v=1"></script>
-    <script src="assets/js/payment-proof.js?v=3"></script>
+    <script src="assets/js/payment-method-picker.js?v=2"></script>
+    <script src="assets/js/payment-proof.js?v=4"></script>
     <script src="assets/js/payment-info.js?v=5"></script>
     <script src="assets/js/phone-validation.js?v=1"></script>
     <script src="assets/js/checkout-validation.js?v=8"></script>
-    <script src="assets/js/cart-page.js?v=14"></script>
+    <script src="assets/js/cart-page.js?v=15"></script>
   </body>
 </html>

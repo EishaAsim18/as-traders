@@ -106,6 +106,11 @@ function showOrder(order) {
 let trackProofOrderAmount = null;
 let trackProofPaymentMethod = "bank_transfer";
 
+var trackProofPaymentForm =
+  typeof initProofPaymentControls === "function"
+    ? initProofPaymentControls({ prefix: "trackProof", txnInputId: "trackProofTxn" })
+    : null;
+
 function hideProofGate() {
   const gate = document.getElementById("trackProofGate");
   if (gate) gate.classList.add("d-none");
@@ -118,6 +123,10 @@ function showProofGate(orderNumber, paymentMethodLabel, orderAmount, paymentMeth
 
   trackProofOrderAmount = orderAmount != null ? Number(orderAmount) : trackProofOrderAmount;
   if (paymentMethod) trackProofPaymentMethod = paymentMethod;
+
+  if (trackProofPaymentForm && trackProofPaymentForm.setPaymentMethod) {
+    trackProofPaymentForm.setPaymentMethod(trackProofPaymentMethod);
+  }
 
   gate.classList.remove("d-none");
   document.getElementById("trackProofGateOrder").textContent = orderNumber;
@@ -147,7 +156,9 @@ function showProofGate(orderNumber, paymentMethodLabel, orderAmount, paymentMeth
 
   if (typeof wireTransactionIdValidation === "function") {
     wireTransactionIdValidation("trackProofTxn", function () {
-      return trackProofPaymentMethod;
+      return trackProofPaymentForm
+        ? trackProofPaymentForm.getPaymentMethod()
+        : trackProofPaymentMethod;
     });
   }
 }
@@ -169,11 +180,20 @@ async function uploadTrackPaymentProof(orderNumber) {
   }
 
   const file = fileInput && fileInput.files[0];
+  const proofMethod =
+    trackProofPaymentForm && trackProofPaymentForm.getPaymentMethod
+      ? trackProofPaymentForm.getPaymentMethod()
+      : trackProofPaymentMethod;
+  const proofBank =
+    trackProofPaymentForm && trackProofPaymentForm.getBankName
+      ? trackProofPaymentForm.getBankName()
+      : "";
   const fieldCheck = validatePaymentProofFields({
     transactionId: txnInput ? txnInput.value : "",
     paidAmount: amountInput ? amountInput.value : "",
     orderAmount: trackProofOrderAmount,
-    paymentMethod: trackProofPaymentMethod,
+    paymentMethod: proofMethod,
+    bankName: proofBank,
     file: file,
   });
   if (!fieldCheck.ok) {
@@ -193,6 +213,8 @@ async function uploadTrackPaymentProof(orderNumber) {
     const result = await publicPost("/orders/payment-proof", {
       orderNumber: orderNumber.trim(),
       phoneLast4: phoneLast4,
+      paymentMethod: fieldCheck.paymentMethod,
+      bankName: fieldCheck.bankName,
       transactionId: fieldCheck.transactionId,
       paidAmount: fieldCheck.paidAmount,
       senderNote: fieldCheck.senderNote,

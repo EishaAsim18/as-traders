@@ -51,6 +51,12 @@ const orderSchema = new mongoose.Schema(
     paymentProofUploadedAt: { type: Date },
     paymentProofTxnId: { type: String, default: "", maxlength: 40 },
     paymentProofAmount: { type: Number },
+    paymentProofChannel: {
+      type: String,
+      enum: ["", "bank_transfer", "jazzcash", "easypaisa"],
+      default: "",
+    },
+    paymentProofBank: { type: String, default: "", maxlength: 120 },
     paymentProofSender: { type: String, default: "", maxlength: 80 },
     paymentProofChecks: {
       txnIdValid: { type: Boolean, default: false },

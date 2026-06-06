@@ -105,6 +105,22 @@
             <span class="text-muted" id="trackProofGateMethod"></span>
           </p>
           <div id="trackProofPaymentInfo" class="mb-3"></div>
+          <label class="form-label small fw-semibold mb-1">How did you pay? *</label>
+          <div id="trackProofPaymentPicker" class="mb-3"></div>
+          <input type="hidden" id="trackProofPaymentMethod" value="bank_transfer" />
+          <div id="trackProofBankWrap" class="mb-3">
+            <label for="trackProofBank" class="form-label small fw-semibold mb-1">Which bank did you pay from? *</label>
+            <select class="form-select mb-2" id="trackProofBank"></select>
+            <div id="trackProofBankOtherWrap" class="d-none">
+              <input
+                type="text"
+                class="form-control"
+                id="trackProofBankOther"
+                maxlength="120"
+                placeholder="Bank name"
+              />
+            </div>
+          </div>
           <label for="trackProofPhone4" class="form-label small fw-semibold mb-1">Last 4 digits of mobile</label>
           <input
             type="text"
@@ -191,10 +207,12 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/payment-options.js?v=2"></script>
+    <script src="assets/js/payment-method-picker.js?v=2"></script>
     <script src="assets/js/payment-info.js?v=3"></script>
-    <script src="assets/js/payment-proof.js?v=3"></script>
+    <script src="assets/js/payment-proof.js?v=4"></script>
     <script src="assets/js/customer-common.js?v=23"></script>
-    <script src="assets/js/track-order-page.js?v=10"></script>
+    <script src="assets/js/track-order-page.js?v=11"></script>
     <script>
       mountPaymentInfo("#trackPaymentInfo", "compact");
     </script>

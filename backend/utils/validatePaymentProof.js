@@ -202,10 +202,47 @@ function buildPaymentProofChecks(order, details) {
   return checks;
 }
 
+function validateProofChannel(body) {
+  const method = normalizePaymentMethod(body.paymentMethod || body.proofPaymentMethod);
+  if (!method || method === "cod") {
+    return {
+      ok: false,
+      message: "Select how you paid — JazzCash, Easypaisa, or Bank",
+      field: "paymentMethod",
+    };
+  }
+
+  let bankName = "";
+  if (method === "bank_transfer") {
+    bankName = String(body.bankName || body.paymentProofBank || "").trim();
+    if (!bankName) {
+      return {
+        ok: false,
+        message: "Select which bank you paid from",
+        field: "bankName",
+      };
+    }
+    if (bankName.length < 2) {
+      return { ok: false, message: "Enter your bank name", field: "bankName" };
+    }
+    if (bankName.length > 120) {
+      return { ok: false, message: "Bank name is too long", field: "bankName" };
+    }
+  }
+
+  return { ok: true, paymentMethod: method, bankName: bankName };
+}
+
 function validatePaymentProofSubmission(order, body, imageMeta) {
+  const channelCheck = validateProofChannel(body);
+  if (!channelCheck.ok) {
+    return { ok: false, message: channelCheck.message, field: channelCheck.field };
+  }
+
+  const proofMethod = channelCheck.paymentMethod;
   const txnCheck = validateTxnId(
     body.transactionId || body.txnId,
-    order.paymentMethod
+    proofMethod
   );
   if (!txnCheck.ok) {
     return { ok: false, message: txnCheck.message, field: txnCheck.field };
@@ -223,10 +260,22 @@ function validatePaymentProofSubmission(order, body, imageMeta) {
 
   const checks = buildPaymentProofChecks(order, { txnCheck, amountCheck, imageCheck });
 
+  const orderMethod = normalizePaymentMethod(order.paymentMethod);
+  if (orderMethod !== "cod" && orderMethod !== proofMethod) {
+    checks.warnings.push(
+      "Customer paid via " +
+        proofMethod.replace(/_/g, " ") +
+        " but checkout method was " +
+        orderMethod.replace(/_/g, " ")
+    );
+  }
+
   return {
     ok: true,
     txnId: txnCheck.value,
     paidAmount: amountCheck.value,
+    paymentMethod: proofMethod,
+    bankName: channelCheck.bankName,
     senderNote: String(body.senderNote || body.sender || "").trim().slice(0, 80),
     checks: checks,
   };
@@ -241,5 +290,6 @@ module.exports = {
   validateDeclaredAmount,
   validateImageBuffer,
   buildPaymentProofChecks,
+  validateProofChannel,
   validatePaymentProofSubmission,
 };
