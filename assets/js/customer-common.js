@@ -11,17 +11,19 @@ const PRODUCT_IMAGES_BY_SKU = {
 const AUTH_HERO_IMAGE = "/assets/images/auth-showroom.jpg";
 const AUTH_HERO_FALLBACK = "/assets/images/auth-showroom.svg";
 
-const PRODUCTION_API_URL = "https://fswd-production.up.railway.app";
 
 /** Backend origin — always from config.js (API_BASE_URL). */
 function getBackendOrigin() {
-  if (typeof API_BASE_URL !== "undefined") return API_BASE_URL;
-  return PRODUCTION_API_URL;
+  if (window.API_BASE_URL) return window.API_BASE_URL;
+  return window.location.origin;
 }
 
 function getPublicApiBase() {
-  if (typeof PUBLIC_API_URL !== "undefined") return PUBLIC_API_URL;
-  return getBackendOrigin() + "/api/public";
+  if (window.PUBLIC_API_URL) return window.PUBLIC_API_URL;
+  if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+    return window.location.origin + "/api/public";
+  }
+  return "https://fswd-production.up.railway.app/api/public";
 }
 
 /** Page origin for static assets (/assets, /customer). */
@@ -33,7 +35,12 @@ function getAppOrigin() {
   return getBackendOrigin();
 }
 
-const PUBLIC_API = getPublicApiBase();
+function getPublicApiUrl(path) {
+  return getPublicApiBase() + path;
+}
+
+window.getPublicApiBase = getPublicApiBase;
+window.getPublicApiUrl = getPublicApiUrl;
 
 const shopProductsById = {};
 
@@ -66,7 +73,7 @@ function isDataImageUrl(url) {
 }
 
 function getProductImageUrl(imageUrl, sku) {
-  const url = (imageUrl || "").trim();
+  const url = String(imageUrl || "").trim();
 
   // Saved file path or external URL from admin upload
   if (url && !isDataImageUrl(url)) {
@@ -145,7 +152,7 @@ async function publicGet(path, queryParams) {
     headers.Authorization = "Bearer " + customerToken;
   }
 
-  let url = PUBLIC_API + path;
+  let url = getPublicApiUrl(path);
   if (queryParams && typeof queryParams === "object") {
     const qs = new URLSearchParams();
     Object.keys(queryParams).forEach(function (key) {
@@ -173,7 +180,7 @@ async function customerGet(path) {
   if (!token) {
     throw new Error("Please sign in to continue");
   }
-  const response = await fetch(PUBLIC_API + path, {
+  const response = await fetch(getPublicApiUrl(path), {
     headers: { Authorization: "Bearer " + token },
   });
   const data = await response.json();
@@ -189,7 +196,7 @@ async function publicPost(path, body) {
   if (customerToken) {
     headers.Authorization = "Bearer " + customerToken;
   }
-  const response = await fetch(PUBLIC_API + path, {
+  const response = await fetch(getPublicApiUrl(path), {
     method: "POST",
     headers: headers,
     body: JSON.stringify(body),
@@ -564,7 +571,7 @@ function applyStoreContact(contact) {
 async function loadStoreContact() {
   try {
     const response = await fetch(
-      (typeof PUBLIC_API_URL !== "undefined" ? PUBLIC_API_URL : getPublicApiBase()) + "/contact",
+      getPublicApiBase() + "/contact",
       { cache: "no-store" }
     );
     const data = await response.json();
@@ -621,4 +628,19 @@ if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", startCustomerPage);
 } else {
   startCustomerPage();
+}
+
+window.getCustomerUser = getCustomerUser;
+window.getCustomerToken = getCustomerToken;
+window.saveCustomerSession = saveCustomerSession;
+window.clearCustomerSession = clearCustomerSession;
+window.publicGet = publicGet;
+window.publicPost = publicPost;
+
+if (typeof customerGet === "function") {
+  window.customerGet = customerGet;
+}
+
+if (typeof customerPost === "function") {
+  window.customerPost = customerPost;
 }

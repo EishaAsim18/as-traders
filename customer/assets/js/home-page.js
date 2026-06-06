@@ -18,19 +18,29 @@ async function loadFeatured() {
   row.innerHTML = '<div class="col-12 text-center text-muted py-4">Loading…</div>';
 
   try {
-    const response = await fetch(PUBLIC_API + "/products");
-    const data = await response.json();
+    const data = await window.publicGet("/products");
+    const products =
+      data.products ||
+      data.data ||
+      data.items ||
+      (Array.isArray(data) ? data : []);
 
-    if (!response.ok) {
-      throw new Error(data.message || "Failed");
+    console.log("[home products]", products);
+
+    if (!products || !products.length) {
+      row.innerHTML = '<div class="col-12 text-center text-muted py-4">No products available right now.</div>';
+      return;
     }
 
-    const items = data.products.slice(0, 4);
+    const items = products.slice(0, 4);
     row.innerHTML = "";
 
     items.forEach(function (p) {
       registerShopProduct(p);
-      const pid = productId(p);
+      const pid = p._id || p.id || "";
+      const name = p.name || p.title || "Product";
+      const price = p.salePrice || p.price || 0;
+      const imageUrl = p.imageUrl || "";
       const out = p.stock <= 0;
 
       const col = document.createElement("div");
@@ -39,9 +49,16 @@ async function loadFeatured() {
       const card = document.createElement("div");
       card.className = "card card-product h-100";
 
+      console.log("[product image]", {
+        name: p.name,
+        sku: p.sku,
+        imageUrl: p.imageUrl,
+        resolved: resolveImageUrl(p, p.sku)
+      });
+
       const ratio = document.createElement("div");
       ratio.className = "ratio ratio-1x1";
-      attachProductImage(ratio, p.imageUrl, p.name, p.sku);
+      attachProductImage(ratio, p, name, p.sku);
       card.appendChild(ratio);
 
       const body = document.createElement("div");
@@ -49,12 +66,12 @@ async function loadFeatured() {
 
       const meta = document.createElement("div");
       meta.className = "small text-muted mb-1";
-      meta.textContent = (p.brand || "") + " · " + p.category;
+      meta.textContent = (p.brand || "") + " · " + (p.category || "");
       body.appendChild(meta);
 
       const title = document.createElement("h3");
       title.className = "h6 fw-semibold mb-1";
-      title.textContent = p.name;
+      title.textContent = name;
       body.appendChild(title);
 
       if (p.color) {
@@ -86,8 +103,9 @@ async function loadFeatured() {
       row.appendChild(col);
     });
   } catch (e) {
+    console.error("Home products load error:", e);
     row.innerHTML =
-      '<div class="col-12"><p class="text-muted text-center">Start the backend and open <a href="/customer/index.html">the shop from this server</a></p></div>';
+      '<div class="col-12 text-center text-muted py-4">Products could not be loaded. Please refresh the page.</div>';
   }
 }
 

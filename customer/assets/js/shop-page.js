@@ -113,36 +113,37 @@ async function loadShopProducts() {
   grid.innerHTML =
     '<div class="col-12 text-center py-5 text-muted">Loading products…</div>';
 
-  let url = PUBLIC_API + "/products?";
+  const params = {};
   if (search && search.value.trim()) {
-    url += "search=" + encodeURIComponent(search.value.trim()) + "&";
+    params.search = search.value.trim();
   }
   if (brand && brand.value) {
-    url += "brand=" + encodeURIComponent(brand.value) + "&";
+    params.brand = brand.value;
   }
   if (category && category.value) {
-    url += "category=" + encodeURIComponent(category.value) + "&";
+    params.category = category.value;
   }
 
   try {
-    const response = await fetch(url);
-    const data = await response.json();
+    const data = await window.publicGet("/products", params);
+    const products =
+      data.products ||
+      data.data ||
+      data.items ||
+      (Array.isArray(data) ? data : []);
 
-    if (!response.ok) {
-      throw new Error(data.message || "Could not load shop");
-    }
+    console.log("[shop products]", products);
 
-    renderShopGrid(data.products);
+    renderShopGrid(products);
     const countEl = document.getElementById("shopCount");
-    if (countEl) countEl.textContent = data.count;
+    if (countEl) {
+      countEl.textContent = data.count !== undefined ? data.count : products.length;
+    }
   } catch (err) {
     console.error("Shop load error:", err);
     grid.innerHTML =
       '<div class="col-12"><div class="alert alert-warning">' +
-      "<strong>Products could not load.</strong> " +
-      "Start backend: <code>npm start</code> in the <code>backend</code> folder. " +
-      'Then open <a href="/customer/shop.html">the shop from this server</a> ' +
-      "(not Live Server / not double-clicking HTML)." +
+      "Products could not be loaded. Please refresh the page." +
       "</div></div>";
   }
 }
@@ -155,15 +156,18 @@ function renderShopGrid(products) {
     delete shopProductsById[k];
   });
 
-  if (!products.length) {
+  if (!products || !products.length) {
     grid.innerHTML =
-      '<div class="col-12 text-muted text-center py-4">No products match your filters.</div>';
+      '<div class="col-12 text-muted text-center py-4">No products available right now.</div>';
     return;
   }
 
   products.forEach(function (p) {
     registerShopProduct(p);
-    const pid = productId(p);
+    const pid = p._id || p.id || "";
+    const name = p.name || p.title || "Product";
+    const price = p.salePrice || p.price || 0;
+    const imageUrl = p.imageUrl || "";
     const out = p.stock <= 0;
     const low = !out && p.stock <= (p.reorderLevel || 10);
 
@@ -173,9 +177,16 @@ function renderShopGrid(products) {
     const card = document.createElement("div");
     card.className = "card card-product h-100";
 
+    console.log("[product image]", {
+      name: p.name,
+      sku: p.sku,
+      imageUrl: p.imageUrl,
+      resolved: resolveImageUrl(p, p.sku)
+    });
+
     const ratio = document.createElement("div");
     ratio.className = "ratio ratio-1x1";
-    attachProductImage(ratio, p.imageUrl, p.name, p.sku);
+    attachProductImage(ratio, p, name, p.sku);
     card.appendChild(ratio);
 
     const body = document.createElement("div");
@@ -183,12 +194,12 @@ function renderShopGrid(products) {
 
     const meta = document.createElement("span");
     meta.className = "small text-muted";
-    meta.textContent = (p.brand || "—") + " · " + p.category;
+    meta.textContent = (p.brand || "—") + " · " + (p.category || "");
     body.appendChild(meta);
 
     const title = document.createElement("h3");
     title.className = "h6 fw-semibold mt-1 mb-1";
-    title.textContent = p.name;
+    title.textContent = name;
     body.appendChild(title);
 
     if (p.color) {
@@ -265,9 +276,8 @@ async function syncCategoryFilterOptions() {
   if (!select) return;
 
   try {
-    const response = await fetch(PUBLIC_API + "/products/categories/list");
-    const data = await response.json();
-    if (!response.ok || !data.categories) return;
+    const data = await window.publicGet("/products/categories/list");
+    if (!data || !data.categories) return;
 
     const current = select.value;
     const keep = new Set([""]);

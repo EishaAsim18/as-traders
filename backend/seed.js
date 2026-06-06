@@ -122,7 +122,7 @@ async function seed() {
       stock: 35,
       reorderLevel: 12,
       location: "Aisle D · Rack 2",
-      imageUrl: "/assets/images/product-placeholder.svg",
+      imageUrl: "/assets/images/products/acc-tr-01.jpg",
     },
     {
       sku: "ACC-SD-02",
@@ -135,7 +135,7 @@ async function seed() {
       stock: 48,
       reorderLevel: 15,
       location: "Aisle D · Rack 2",
-      imageUrl: "/assets/images/product-placeholder.svg",
+      imageUrl: "/assets/images/products/acc-sd-02.jpg",
     },
     {
       sku: "BS-5P-01",
@@ -149,7 +149,7 @@ async function seed() {
       stock: 18,
       reorderLevel: 6,
       location: "Aisle A · Rack 2",
-      imageUrl: "/assets/images/product-placeholder.svg",
+      imageUrl: "/assets/images/products/bs-5p-01.jpg",
     },
   ];
 

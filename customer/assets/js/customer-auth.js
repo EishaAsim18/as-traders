@@ -316,11 +316,25 @@
     clearFormErrors(form);
     if (!validateLoginForm()) return;
 
+    if (typeof window.publicPost !== "function") {
+      if (typeof showCustomerAlert === "function") {
+        showCustomerAlert("Registration system is not ready. Please refresh the page.", "danger");
+      } else if (typeof showFormAlert === "function") {
+        showFormAlert("Registration system is not ready. Please refresh the page.", "danger");
+      } else if (typeof showToast === "function") {
+        showToast("Registration system is not ready. Please refresh the page.", "danger");
+      } else {
+        alert("Registration system is not ready. Please refresh the page.");
+      }
+      console.error("window.publicPost missing. Check customer-common.js loading.");
+      return;
+    }
+
     const btn = form.querySelector('button[type="submit"]');
     setSubmitLoading(btn, true);
 
     try {
-      const data = await publicPost("/customers/login", {
+      const data = await window.publicPost("/customers/login", {
         email: trim(document.getElementById("emailIn").value).toLowerCase(),
         password: document.getElementById("passIn").value,
       });
@@ -342,13 +356,27 @@
     clearFormErrors(form);
     if (!validateRegisterForm()) return;
 
+    if (typeof window.publicPost !== "function") {
+      if (typeof showCustomerAlert === "function") {
+        showCustomerAlert("Registration system is not ready. Please refresh the page.", "danger");
+      } else if (typeof showFormAlert === "function") {
+        showFormAlert("Registration system is not ready. Please refresh the page.", "danger");
+      } else if (typeof showToast === "function") {
+        showToast("Registration system is not ready. Please refresh the page.", "danger");
+      } else {
+        alert("Registration system is not ready. Please refresh the page.");
+      }
+      console.error("window.publicPost missing. Check customer-common.js loading.");
+      return;
+    }
+
     const btn = form.querySelector('button[type="submit"]');
     setSubmitLoading(btn, true);
 
     try {
       const registeredEmail = trim(document.getElementById("emailReg").value).toLowerCase();
 
-      await publicPost("/customers/register", {
+      await window.publicPost("/customers/register", {
         firstName: trim(document.getElementById("firstName").value),
         lastName: trim(document.getElementById("lastName").value),
         email: registeredEmail,

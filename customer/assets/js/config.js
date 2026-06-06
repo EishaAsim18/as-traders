@@ -1,13 +1,18 @@
-/**
- * API configuration — local dev uses Express on :3000, production uses Railway.
- */
-const PRODUCTION_API_URL = "https://fswd-production.up.railway.app";
+(function () {
+  var PRODUCTION_API_URL = "https://fswd-production.up.railway.app";
 
-function isLocalDevHost() {
-  var host = window.location.hostname;
-  return host === "localhost" || host === "127.0.0.1";
-}
+  function isLocalHost() {
+    return window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+  }
 
-const API_BASE_URL = isLocalDevHost() ? "http://localhost:3000" : PRODUCTION_API_URL;
-const API_URL = API_BASE_URL + "/api";
-const PUBLIC_API_URL = API_BASE_URL + "/api/public";
+  window.API_BASE_URL = isLocalHost() ? window.location.origin : PRODUCTION_API_URL;
+  window.API_URL = window.API_BASE_URL + "/api";
+  window.PUBLIC_API_URL = window.API_BASE_URL + "/api/public";
+
+  console.log("[customer config]", {
+    origin: window.location.origin,
+    API_BASE_URL: window.API_BASE_URL,
+    API_URL: window.API_URL,
+    PUBLIC_API_URL: window.PUBLIC_API_URL
+  });
+})();

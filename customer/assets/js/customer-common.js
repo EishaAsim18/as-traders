@@ -7,21 +7,38 @@ const PRODUCT_IMAGES_BY_SKU = {
   "PP-25-4": "/assets/images/products/pp-25-4.svg",
   "MX-BS-05": "/assets/images/products/mx-bs-05.svg",
   "CC-FR-02": "/assets/images/products/cc-fr-02.svg",
+  "ACC-TR-01": "/assets/images/products/acc-tr-01.jpg",
+  "ACC-SD-02": "/assets/images/products/acc-sd-02.jpg",
+  "BS-5P-01": "/assets/images/products/bs-5p-01.jpg",
 };
 const AUTH_HERO_IMAGE = "/assets/images/auth-showroom.jpg";
 const AUTH_HERO_FALLBACK = "/assets/images/auth-showroom.svg";
 
-const PRODUCTION_API_URL = "https://fswd-production.up.railway.app";
+var CUSTOMER_PRODUCTION_API_URL = "https://fswd-production.up.railway.app";
 
-/** Backend origin — always from config.js (API_BASE_URL). */
+function isLocalCustomerHost() {
+  return (
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1"
+  );
+}
+
 function getBackendOrigin() {
-  if (typeof API_BASE_URL !== "undefined") return API_BASE_URL;
-  return PRODUCTION_API_URL;
+  if (window.API_BASE_URL) return window.API_BASE_URL;
+
+  if (isLocalCustomerHost()) {
+    return window.location.origin;
+  }
+
+  return CUSTOMER_PRODUCTION_API_URL;
 }
 
 function getPublicApiBase() {
-  if (typeof PUBLIC_API_URL !== "undefined") return PUBLIC_API_URL;
-  return getBackendOrigin() + "/api/public";
+  if (window.PUBLIC_API_URL) return window.PUBLIC_API_URL;
+  if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+    return window.location.origin + "/api/public";
+  }
+  return "https://fswd-production.up.railway.app/api/public";
 }
 
 /** Page origin for static assets (/assets, /customer). */
@@ -33,7 +50,12 @@ function getAppOrigin() {
   return getBackendOrigin();
 }
 
-const PUBLIC_API = getPublicApiBase();
+function getPublicApiUrl(path) {
+  return getPublicApiBase() + path;
+}
+
+window.getPublicApiBase = getPublicApiBase;
+window.getPublicApiUrl = getPublicApiUrl;
 
 const shopProductsById = {};
 
@@ -65,17 +87,24 @@ function isDataImageUrl(url) {
   return /^data:image\//i.test(url || "");
 }
 
-function getProductImageUrl(imageUrl, sku) {
-  const url = (imageUrl || "").trim();
+function getProductImageUrl(productOrImageUrl, sku) {
+  let imageUrl = "";
 
-  // Saved file path or external URL from admin upload
-  if (url && !isDataImageUrl(url)) {
-    return url;
+  if (typeof productOrImageUrl === "object" && productOrImageUrl) {
+    const product = productOrImageUrl;
+    imageUrl =
+      product.imageUrl ||
+      product.image ||
+      (Array.isArray(product.images) ? product.images[0] : "") ||
+      (Array.isArray(product.media) && product.media[0] ? (product.media[0].url || product.media[0]) : "") ||
+      "";
+    sku = product.sku || sku;
+  } else {
+    imageUrl = productOrImageUrl || "";
   }
 
-  // Legacy base64 in DB — still show if present (backend migrates these on save)
-  if (url && isDataImageUrl(url)) {
-    return url;
+  if (imageUrl && String(imageUrl).trim()) {
+    return String(imageUrl).trim();
   }
 
   if (sku && PRODUCT_IMAGES_BY_SKU[sku]) {
@@ -86,23 +115,19 @@ function getProductImageUrl(imageUrl, sku) {
 }
 
 function assetUrl(path) {
-  const p = (path || "").trim();
+  const p = String(path || "").trim();
   if (!p) return "";
-  if (p.startsWith("data:") || p.startsWith("http://") || p.startsWith("https://")) {
-    return p;
-  }
+  if (p.startsWith("data:") || p.startsWith("http://") || p.startsWith("https://")) return p;
+
   if (p.startsWith("/")) {
-    const loc = window.location;
-    const onBackend =
-      (loc.protocol === "http:" || loc.protocol === "https:") &&
-      (loc.port === "3000" || loc.port === "");
-    return (onBackend ? getAppOrigin() : getBackendOrigin()) + p;
+    return window.location.origin + p;
   }
-  return p;
+
+  return window.location.origin + "/" + p.replace(/^\/+/, "");
 }
 
-function resolveImageUrl(url, sku) {
-  const resolved = assetUrl(getProductImageUrl(url, sku));
+function resolveImageUrl(productOrImageUrl, sku) {
+  const resolved = assetUrl(getProductImageUrl(productOrImageUrl, sku));
   if (
     resolved &&
     resolved.indexOf("/assets/images/products/") !== -1 &&
@@ -114,8 +139,8 @@ function resolveImageUrl(url, sku) {
   return resolved;
 }
 
-function attachProductImage(container, imageUrl, alt, sku) {
-  const primary = getProductImageUrl(imageUrl, sku);
+function attachProductImage(container, productOrImageUrl, alt, sku) {
+  const primary = getProductImageUrl(productOrImageUrl, sku);
   const img = document.createElement("img");
   img.alt = alt || "Product";
   img.loading = "lazy";
@@ -124,7 +149,7 @@ function attachProductImage(container, imageUrl, alt, sku) {
   const isVector =
     primary.endsWith(".svg") || primary.indexOf(".svg") !== -1 || isDataImageUrl(primary);
   if (isVector) img.classList.add("product-catalog-img--contain");
-  img.src = resolveImageUrl(imageUrl, sku);
+  img.src = resolveImageUrl(productOrImageUrl, sku);
   img.onerror = function () {
     const skuFallback = sku && PRODUCT_IMAGES_BY_SKU[sku];
     if (skuFallback && !img.dataset.skuTried) {
@@ -145,7 +170,7 @@ async function publicGet(path, queryParams) {
     headers.Authorization = "Bearer " + customerToken;
   }
 
-  let url = PUBLIC_API + path;
+  let url = getPublicApiUrl(path);
   if (queryParams && typeof queryParams === "object") {
     const qs = new URLSearchParams();
     Object.keys(queryParams).forEach(function (key) {
@@ -173,7 +198,7 @@ async function customerGet(path) {
   if (!token) {
     throw new Error("Please sign in to continue");
   }
-  const response = await fetch(PUBLIC_API + path, {
+  const response = await fetch(getPublicApiUrl(path), {
     headers: { Authorization: "Bearer " + token },
   });
   const data = await response.json();
@@ -189,7 +214,7 @@ async function publicPost(path, body) {
   if (customerToken) {
     headers.Authorization = "Bearer " + customerToken;
   }
-  const response = await fetch(PUBLIC_API + path, {
+  const response = await fetch(getPublicApiUrl(path), {
     method: "POST",
     headers: headers,
     body: JSON.stringify(body),
@@ -564,7 +589,7 @@ function applyStoreContact(contact) {
 async function loadStoreContact() {
   try {
     const response = await fetch(
-      (typeof PUBLIC_API_URL !== "undefined" ? PUBLIC_API_URL : getPublicApiBase()) + "/contact",
+      getPublicApiBase() + "/contact",
       { cache: "no-store" }
     );
     const data = await response.json();
@@ -612,6 +637,18 @@ function handleShopGridClick(event) {
 
   addToCart(product, 1);
 }
+
+window.getCustomerUser = getCustomerUser;
+window.getCustomerToken = getCustomerToken;
+window.saveCustomerSession = saveCustomerSession;
+window.clearCustomerSession = clearCustomerSession;
+window.publicGet = publicGet;
+window.publicPost = publicPost;
+window.customerGet = customerGet;
+
+console.log("[customer-common]", {
+  publicApiBase: getPublicApiBase()
+});
 
 window.addEventListener("as-store-contact-ready", function () {
   if (applyStoreContactFromWindow()) return;

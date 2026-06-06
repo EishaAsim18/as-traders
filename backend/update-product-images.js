@@ -9,6 +9,9 @@ const IMAGES = {
   "PP-25-4": "/assets/images/products/pp-25-4.svg",
   "MX-BS-05": "/assets/images/products/mx-bs-05.svg",
   "CC-FR-02": "/assets/images/products/cc-fr-02.svg",
+  "ACC-TR-01": "/assets/images/products/acc-tr-01.jpg",
+  "ACC-SD-02": "/assets/images/products/acc-sd-02.jpg",
+  "BS-5P-01": "/assets/images/products/bs-5p-01.jpg",
 };
 
 async function run() {

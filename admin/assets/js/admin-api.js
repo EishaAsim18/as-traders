@@ -1,8 +1,16 @@
 // Admin API client — requires js/config.js loaded first (API_URL).
-var API_BASE =
-  typeof API_URL !== "undefined"
-    ? API_URL
-    : "https://fswd-production.up.railway.app/api";
+var ADMIN_PRODUCTION_API_URL = "https://fswd-production.up.railway.app";
+
+function isLocalAdminHost() {
+  return window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+}
+
+function getAdminApiBase() {
+  if (window.API_URL) return window.API_URL;
+  if (window.API_BASE_URL) return window.API_BASE_URL + "/api";
+  if (isLocalAdminHost()) return window.location.origin + "/api";
+  return ADMIN_PRODUCTION_API_URL + "/api";
+}
 
 function saveToken(token) {
   localStorage.setItem("adminToken", token);
@@ -55,7 +63,7 @@ async function parseApiResponse(response) {
 }
 
 async function login(email, password) {
-  const response = await fetch(API_BASE + "/auth/login", {
+  const response = await fetch(getAdminApiBase() + "/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
@@ -73,7 +81,7 @@ async function login(email, password) {
 }
 
 async function apiGet(path) {
-  const response = await fetch(API_BASE + path, {
+  const response = await fetch(getAdminApiBase() + path, {
     headers: {
       Authorization: "Bearer " + getToken(),
     },
@@ -95,7 +103,7 @@ async function apiGet(path) {
 }
 
 async function apiPatch(path, body) {
-  const response = await fetch(API_BASE + path, {
+  const response = await fetch(getAdminApiBase() + path, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -120,7 +128,7 @@ async function apiPatch(path, body) {
 }
 
 async function apiPut(path, body) {
-  const response = await fetch(API_BASE + path, {
+  const response = await fetch(getAdminApiBase() + path, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -168,7 +176,7 @@ async function uploadProductImage(sku, file) {
 }
 
 async function apiPost(path, body) {
-  const response = await fetch(API_BASE + path, {
+  const response = await fetch(getAdminApiBase() + path, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -195,7 +203,7 @@ async function apiPost(path, body) {
 }
 
 async function apiDelete(path) {
-  const response = await fetch(API_BASE + path, {
+  const response = await fetch(getAdminApiBase() + path, {
     method: "DELETE",
     headers: {
       Authorization: "Bearer " + getToken(),
@@ -232,7 +240,7 @@ async function uploadOrderPaymentProof(orderId, dataUrl, options) {
 
 // Download PDF for an order's invoice (bill + delivery address)
 async function downloadOrderInvoicePdf(orderId, fileName) {
-  const response = await fetch(API_BASE + "/orders/" + orderId + "/invoice/pdf", {
+  const response = await fetch(getAdminApiBase() + "/orders/" + orderId + "/invoice/pdf", {
     headers: {
       Authorization: "Bearer " + getToken(),
     },
@@ -264,7 +272,7 @@ async function downloadOrderInvoicePdf(orderId, fileName) {
 
 // Download invoice PDF (needs login token)
 async function downloadInvoicePdf(invoiceId, fileName) {
-  const response = await fetch(API_BASE + "/invoices/" + invoiceId + "/pdf", {
+  const response = await fetch(getAdminApiBase() + "/invoices/" + invoiceId + "/pdf", {
     headers: {
       Authorization: "Bearer " + getToken(),
     },
@@ -293,3 +301,7 @@ async function downloadInvoicePdf(invoiceId, fileName) {
   link.remove();
   window.URL.revokeObjectURL(url);
 }
+
+console.log("[admin api]", {
+  adminApiBase: getAdminApiBase()
+});
