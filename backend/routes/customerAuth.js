@@ -6,7 +6,7 @@ const { validateRegister, validateLogin } = require("../utils/validateCustomerAu
 const requireCustomer = require("../middleware/requireCustomer");
 const { fetchOrdersForCustomer } = require("../utils/customerAdmin");
 const { statusLabel, normalizeStatus } = require("../utils/orderStatus");
-const { paymentMethodLabel } = require("../utils/paymentMethod");
+const { paymentMethodLabel, normalizePaymentMethod } = require("../utils/paymentMethod");
 
 const router = express.Router();
 
@@ -170,6 +170,9 @@ router.get("/me/orders", requireCustomer, async (req, res) => {
           paymentStatus: order.paymentStatus || "unpaid",
           paymentMethod: order.paymentMethod,
           paymentMethodLabel: paymentMethodLabel(order.paymentMethod),
+          hasPaymentProof: !!order.paymentProofUrl,
+          needsPaymentProof:
+            normalizePaymentMethod(order.paymentMethod) !== "cod" && !order.paymentProofUrl,
           createdAt: order.createdAt,
           itemCount: (order.items || []).length,
           items: (order.items || []).map(function (item) {

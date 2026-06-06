@@ -40,6 +40,9 @@ function renderOrders(orders) {
     .map(function (order) {
       const trackUrl =
         "track-order.html?order=" + encodeURIComponent(order.orderNumber);
+      const needsProof = order.needsPaymentProof;
+      const trackBtnLabel = needsProof ? "Upload payment" : "View &amp; track";
+      const trackBtnClass = needsProof ? "btn btn-outline-accent btn-sm" : "btn btn-accent btn-sm";
       const itemsPreview = (order.items || [])
         .slice(0, 2)
         .map(function (item) {
@@ -83,10 +86,17 @@ function renderOrders(orders) {
             order.paymentMethodLabel +
             "</span>"
           : "") +
+        (needsProof
+          ? '<span class="small text-warning ms-2">· Screenshot pending</span>'
+          : "") +
         "</div>" +
         '<a href="' +
         trackUrl +
-        '" class="btn btn-accent btn-sm">View &amp; track</a>' +
+        '" class="' +
+        trackBtnClass +
+        '">' +
+        trackBtnLabel +
+        "</a>" +
         "</div></article>"
       );
     })

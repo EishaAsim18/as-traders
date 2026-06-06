@@ -50,6 +50,7 @@ function buildTimeline(status, createdAt) {
 }
 
 function showOrder(order) {
+  hideProofGate();
   document.getElementById("trackResults").classList.remove("d-none");
   document.getElementById("trackOrderNumber").textContent = order.orderNumber;
   document.getElementById("trackStatusBadge").textContent = order.statusLabel;
@@ -100,6 +101,90 @@ function showOrder(order) {
       "</span>";
     list.appendChild(li);
   });
+}
+
+function hideProofGate() {
+  const gate = document.getElementById("trackProofGate");
+  if (gate) gate.classList.add("d-none");
+}
+
+function showProofGate(orderNumber, paymentMethodLabel) {
+  document.getElementById("trackResults").classList.add("d-none");
+  const gate = document.getElementById("trackProofGate");
+  if (!gate) return;
+
+  gate.classList.remove("d-none");
+  document.getElementById("trackProofGateOrder").textContent = orderNumber;
+  const methodEl = document.getElementById("trackProofGateMethod");
+  if (methodEl) {
+    methodEl.textContent = paymentMethodLabel ? " · " + paymentMethodLabel : "";
+  }
+
+  const phoneInput = document.getElementById("trackProofPhone4");
+  if (phoneInput && !phoneInput.value.trim()) {
+    const saved = sessionStorage.getItem("asLastCheckoutPhone");
+    if (saved) phoneInput.value = saved;
+  }
+
+  const payBox = document.getElementById("trackProofPaymentInfo");
+  if (payBox && typeof mountPaymentInfo === "function") {
+    mountPaymentInfo("#trackProofPaymentInfo", "compact");
+  }
+
+  const msgEl = document.getElementById("trackProofMsg");
+  if (msgEl) msgEl.classList.add("d-none");
+}
+
+async function uploadTrackPaymentProof(orderNumber) {
+  const fileInput = document.getElementById("trackProofFile");
+  const phoneInput = document.getElementById("trackProofPhone4");
+  const msgEl = document.getElementById("trackProofMsg");
+  const btn = document.getElementById("trackProofUploadBtn");
+
+  const file = fileInput && fileInput.files[0];
+  const phoneLast4 = phoneInput ? phoneInput.value.trim() : "";
+
+  if (!/^\d{4}$/.test(phoneLast4)) {
+    msgEl.textContent = "Enter the last 4 digits of your mobile number";
+    msgEl.className = "small mt-2 text-danger";
+    msgEl.classList.remove("d-none");
+    return false;
+  }
+
+  if (!file) {
+    msgEl.textContent = "Choose a screenshot image first";
+    msgEl.className = "small mt-2 text-danger";
+    msgEl.classList.remove("d-none");
+    return false;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Uploading…";
+  msgEl.classList.add("d-none");
+
+  try {
+    const dataUrl = await readImageFileAsDataUrl(file);
+    await publicPost("/orders/payment-proof", {
+      orderNumber: orderNumber.trim(),
+      phoneLast4: phoneLast4,
+      dataUrl: dataUrl,
+    });
+
+    sessionStorage.setItem("asLastCheckoutPhone", phoneLast4);
+    fileInput.value = "";
+    msgEl.textContent = "Screenshot uploaded. Loading your order…";
+    msgEl.className = "small mt-2 text-success";
+    msgEl.classList.remove("d-none");
+    return true;
+  } catch (err) {
+    msgEl.textContent = err.message || "Upload failed";
+    msgEl.className = "small mt-2 text-danger";
+    msgEl.classList.remove("d-none");
+    return false;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Upload & track order";
+  }
 }
 
 function validateTrackOrderId(value) {
@@ -165,6 +250,7 @@ async function trackOrder(orderNumber) {
   }
 
   errEl.classList.add("d-none");
+  hideProofGate();
   document.getElementById("trackResults").classList.add("d-none");
   btn.disabled = true;
   btn.textContent = "Searching…";
@@ -177,6 +263,14 @@ async function trackOrder(orderNumber) {
     showOrder(data.order);
   } catch (err) {
     document.getElementById("trackResults").classList.add("d-none");
+    if (err.requiresPaymentProof) {
+      showProofGate(
+        err.orderNumber || orderNumber.trim(),
+        err.paymentMethodLabel || ""
+      );
+      errEl.classList.add("d-none");
+      return;
+    }
     errEl.textContent = err.message || "Could not load this order";
     errEl.classList.remove("d-none");
   } finally {
@@ -186,6 +280,15 @@ async function trackOrder(orderNumber) {
 }
 
 initTrackFormForSession();
+
+const trackProofBtn = document.getElementById("trackProofUploadBtn");
+if (trackProofBtn) {
+  trackProofBtn.addEventListener("click", async function () {
+    const orderNumber = document.getElementById("orderId").value.trim();
+    const ok = await uploadTrackPaymentProof(orderNumber);
+    if (ok) trackOrder(orderNumber);
+  });
+}
 
 document.getElementById("trackForm").addEventListener("submit", function (e) {
   e.preventDefault();

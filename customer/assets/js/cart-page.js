@@ -222,6 +222,33 @@ if (document.getElementById("checkoutPaymentPicker")) {
   });
 }
 
+function updateSuccessTrackLink(hasProof) {
+  const link = document.getElementById("trackOrderLink");
+  if (!link || !lastPlacedOrder) return;
+
+  const isPrepaid =
+    typeof isPrepaidPaymentMethod === "function" &&
+    isPrepaidPaymentMethod(lastPlacedOrder.paymentMethod);
+
+  if (isPrepaid && !hasProof) {
+    link.classList.add("disabled", "opacity-50");
+    link.setAttribute("aria-disabled", "true");
+    link.href = "#";
+    link.textContent = "Upload screenshot to track order";
+    link.onclick = function (e) {
+      e.preventDefault();
+    };
+    return;
+  }
+
+  link.classList.remove("disabled", "opacity-50");
+  link.removeAttribute("aria-disabled");
+  link.href =
+    "track-order.html?order=" + encodeURIComponent(lastPlacedOrder.orderNumber);
+  link.textContent = "Track this order";
+  link.onclick = null;
+}
+
 const btnSuccessProof = document.getElementById("btnSuccessProofUpload");
 if (btnSuccessProof) {
   btnSuccessProof.addEventListener("click", async function () {
@@ -258,6 +285,7 @@ if (btnSuccessProof) {
     msgEl.className = "small mt-2 text-success";
     msgEl.classList.remove("d-none");
     fileInput.value = "";
+    updateSuccessTrackLink(true);
   } catch (err) {
     msgEl.textContent = err.message || "Upload failed";
     msgEl.className = "small mt-2 text-danger";
@@ -337,6 +365,9 @@ document.getElementById("checkoutForm").addEventListener("submit", async functio
     }
     document.getElementById("trackOrderLink").href =
       "track-order.html?order=" + encodeURIComponent(data.order.orderNumber);
+    updateSuccessTrackLink(
+      !(typeof isPrepaidPaymentMethod === "function" && isPrepaidPaymentMethod(method))
+    );
     orderSuccessModal.show();
   } catch (err) {
     if (err.errors && err.errors.length) {

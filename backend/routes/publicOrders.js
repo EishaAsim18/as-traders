@@ -13,7 +13,7 @@ const trackOrderAuth = require("../middleware/trackOrderAuth");
 const { DELIVERY_FEE_ONLINE } = require("../utils/customerSource");
 const { getSalePrice } = require("../utils/productPrice");
 const { paymentMethodLabel } = require("../utils/paymentMethod");
-const { resolveOrderTrackAccess } = require("../utils/orderAccess");
+const { resolveOrderTrackAccess, resolvePaymentProofForTrack } = require("../utils/orderAccess");
 const { phoneLast4Matches } = require("../utils/phoneMatch");
 const { savePaymentProof } = require("../utils/savePaymentProof");
 const { normalizePaymentMethod } = require("../utils/paymentMethod");
@@ -214,6 +214,21 @@ router.get("/track/:orderNumber", trackOrderAuth, async (req, res) => {
     const access = resolveOrderTrackAccess(order, req, accountEmail);
     if (!access.ok) {
       return res.status(access.status).json({ message: access.message });
+    }
+
+    const proofCheck = resolvePaymentProofForTrack(
+      order,
+      normalizePaymentMethod,
+      paymentMethodLabel
+    );
+    if (!proofCheck.ok) {
+      return res.status(proofCheck.status).json({
+        message: proofCheck.message,
+        requiresPaymentProof: proofCheck.requiresPaymentProof,
+        orderNumber: proofCheck.orderNumber,
+        paymentMethod: proofCheck.paymentMethod,
+        paymentMethodLabel: proofCheck.paymentMethodLabel,
+      });
     }
 
     res.json({

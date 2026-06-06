@@ -201,7 +201,12 @@ async function publicGet(path, queryParams) {
   const response = await fetch(url, { headers: headers });
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.message || "Request failed");
+    const err = new Error(data.message || "Request failed");
+    if (data.requiresPaymentProof) err.requiresPaymentProof = true;
+    if (data.orderNumber) err.orderNumber = data.orderNumber;
+    if (data.paymentMethod) err.paymentMethod = data.paymentMethod;
+    if (data.paymentMethodLabel) err.paymentMethodLabel = data.paymentMethodLabel;
+    throw err;
   }
   return data;
 }

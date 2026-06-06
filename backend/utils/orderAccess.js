@@ -6,6 +6,26 @@ function customerOwnsGuestOrder(order, accountEmail) {
 }
 
 /**
+ * Bank / wallet orders need a payment screenshot before the customer can track.
+ */
+function resolvePaymentProofForTrack(order, normalizePaymentMethod, paymentMethodLabel) {
+  const method = normalizePaymentMethod(order.paymentMethod);
+  if (method === "cod" || order.paymentProofUrl) {
+    return { ok: true };
+  }
+
+  return {
+    ok: false,
+    status: 403,
+    message: "Upload your payment screenshot first to track this order.",
+    requiresPaymentProof: true,
+    orderNumber: order.orderNumber,
+    paymentMethod: method,
+    paymentMethodLabel: paymentMethodLabel(method),
+  };
+}
+
+/**
  * Decide if this request may see full order details.
  * Orders linked to an account (customerId) require that same account's JWT.
  */
@@ -68,5 +88,6 @@ function resolveOrderTrackAccess(order, req, accountEmail) {
 
 module.exports = {
   customerOwnsGuestOrder,
+  resolvePaymentProofForTrack,
   resolveOrderTrackAccess,
 };
