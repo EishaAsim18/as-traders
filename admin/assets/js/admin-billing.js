@@ -337,6 +337,149 @@ function renderCart() {
 
 const DELIVERY_FEE = 1200;
 const INVOICE_NAME_RE = /^[a-zA-Z\s.'-]{2,80}$/;
+const DUE_DATE_MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+function initDueDateSelectors() {
+  const dayEl = document.getElementById("newDueDay");
+  const monthEl = document.getElementById("newDueMonth");
+  const yearEl = document.getElementById("newDueYear");
+  if (!dayEl || !monthEl || !yearEl || dayEl.dataset.ready === "1") return;
+
+  monthEl.innerHTML = '<option value="">Month</option>';
+  DUE_DATE_MONTHS.forEach(function (name, index) {
+    const opt = document.createElement("option");
+    opt.value = String(index + 1);
+    opt.textContent = name;
+    monthEl.appendChild(opt);
+  });
+
+  const startYear = new Date().getFullYear();
+  yearEl.innerHTML = '<option value="">Year</option>';
+  for (let y = startYear; y <= startYear + 5; y += 1) {
+    const opt = document.createElement("option");
+    opt.value = String(y);
+    opt.textContent = String(y);
+    yearEl.appendChild(opt);
+  }
+
+  fillDueDayOptions();
+  updateDueDateSelectStates();
+  dayEl.dataset.ready = "1";
+
+  yearEl.addEventListener("change", function () {
+    monthEl.value = "";
+    dayEl.value = "";
+    updateDueDateSelectStates();
+    syncDueDateFromSelectors();
+  });
+  monthEl.addEventListener("change", function () {
+    dayEl.value = "";
+    fillDueDayOptions();
+    updateDueDateSelectStates();
+    syncDueDateFromSelectors();
+  });
+  dayEl.addEventListener("change", syncDueDateFromSelectors);
+}
+
+function updateDueDateSelectStates() {
+  const dayEl = document.getElementById("newDueDay");
+  const monthEl = document.getElementById("newDueMonth");
+  const yearEl = document.getElementById("newDueYear");
+  if (!dayEl || !monthEl || !yearEl) return;
+
+  monthEl.disabled = !yearEl.value;
+  dayEl.disabled = !yearEl.value || !monthEl.value;
+}
+
+function fillDueDayOptions() {
+  const dayEl = document.getElementById("newDueDay");
+  const monthEl = document.getElementById("newDueMonth");
+  const yearEl = document.getElementById("newDueYear");
+  if (!dayEl || !monthEl || !yearEl) return;
+
+  const previous = dayEl.value;
+  dayEl.innerHTML = '<option value="">Day</option>';
+
+  const month = Number(monthEl.value);
+  const year = Number(yearEl.value) || new Date().getFullYear();
+  const maxDay = month ? new Date(year, month, 0).getDate() : 31;
+
+  for (let d = 1; d <= maxDay; d += 1) {
+    const opt = document.createElement("option");
+    opt.value = String(d);
+    opt.textContent = String(d);
+    dayEl.appendChild(opt);
+  }
+
+  if (previous && Number(previous) <= maxDay) {
+    dayEl.value = previous;
+  }
+}
+
+function syncDueDateFromSelectors() {
+  const dayEl = document.getElementById("newDueDay");
+  const monthEl = document.getElementById("newDueMonth");
+  const yearEl = document.getElementById("newDueYear");
+  const hidden = document.getElementById("newDueDate");
+  if (!dayEl || !monthEl || !yearEl || !hidden) return;
+
+  const day = dayEl.value;
+  const month = monthEl.value;
+  const year = yearEl.value;
+
+  clearDueDateFieldErrors();
+
+  if (!day || !month || !year) {
+    hidden.value = "";
+    return;
+  }
+
+  hidden.value =
+    year + "-" + String(month).padStart(2, "0") + "-" + String(day).padStart(2, "0");
+}
+
+function resetDueDateSelectors() {
+  const dayEl = document.getElementById("newDueDay");
+  const monthEl = document.getElementById("newDueMonth");
+  const yearEl = document.getElementById("newDueYear");
+  const hidden = document.getElementById("newDueDate");
+  if (dayEl) dayEl.value = "";
+  if (monthEl) monthEl.value = "";
+  if (yearEl) yearEl.value = "";
+  if (hidden) hidden.value = "";
+  fillDueDayOptions();
+  updateDueDateSelectStates();
+  clearDueDateFieldErrors();
+}
+
+function clearDueDateFieldErrors() {
+  ["newDueDay", "newDueMonth", "newDueYear"].forEach(function (id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("is-invalid");
+  });
+}
+
+function showDueDateFieldError(message) {
+  ["newDueDay", "newDueMonth", "newDueYear"].forEach(function (id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add("is-invalid");
+  });
+  const feedback = document.getElementById("newDueDateFeedback");
+  if (feedback && message) feedback.textContent = message;
+}
 
 const CREATE_INVOICE_FIELD_IDS = {
   customerName: "newCustomerName",
@@ -347,9 +490,11 @@ const CREATE_INVOICE_FIELD_IDS = {
 
 function clearCreateInvoiceFieldErrors() {
   Object.keys(CREATE_INVOICE_FIELD_IDS).forEach(function (key) {
+    if (key === "dueDate") return;
     const el = document.getElementById(CREATE_INVOICE_FIELD_IDS[key]);
     if (el) el.classList.remove("is-invalid");
   });
+  clearDueDateFieldErrors();
   const alertEl = document.getElementById("createInvoiceFormAlert");
   if (alertEl) alertEl.classList.add("d-none");
 }
@@ -361,6 +506,10 @@ function showCreateInvoiceFieldErrors(errors) {
   if (!list.length) return;
 
   list.forEach(function (err) {
+    if (err.field === "dueDate") {
+      showDueDateFieldError(err.message);
+      return;
+    }
     const id = CREATE_INVOICE_FIELD_IDS[err.field];
     if (id) {
       const el = document.getElementById(id);
@@ -379,6 +528,7 @@ function showCreateInvoiceFieldErrors(errors) {
 }
 
 function validateCreateInvoiceForm() {
+  syncDueDateFromSelectors();
   const errors = [];
   const customerName = document.getElementById("newCustomerName").value.trim();
   const phoneEl = document.getElementById("newCustomerPhone");
@@ -530,12 +680,7 @@ async function submitNewInvoice() {
 async function openCreateInvoiceModal() {
   clearCreateInvoiceFieldErrors();
   document.getElementById("newInvoiceDiscount").value = "0";
-  const dueInput = document.getElementById("newDueDate");
-  if (dueInput) {
-    const today = new Date();
-    dueInput.min = today.toISOString().slice(0, 10);
-    dueInput.value = "";
-  }
+  resetDueDateSelectors();
   const data = await apiGet("/products");
   allProducts = data.products;
   fillProductSelect();
@@ -556,6 +701,7 @@ function filterInvoicesClient() {
 }
 
 setupAdminPage();
+initDueDateSelectors();
 
 document.getElementById("btnCreateInvoice").addEventListener("click", function () {
   openCreateInvoiceModal().catch(function (err) {

@@ -241,9 +241,30 @@
                   <div class="invalid-feedback">Use a valid Pakistan mobile (e.g. 03001234567).</div>
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label small" for="newDueDate">Payment due date</label>
-                  <input type="date" class="form-control" id="newDueDate" />
-                  <div class="invalid-feedback">Due date cannot be in the past.</div>
+                  <label class="form-label small">Payment due date <span class="text-muted">(optional)</span></label>
+                  <p class="small text-muted mb-2">Pehle year, phir month, phir day select karein.</p>
+                  <div class="row g-2" id="newDueDateWrap">
+                    <div class="col-4">
+                      <label class="form-label small text-muted mb-1" for="newDueYear">Year</label>
+                      <select class="form-select" id="newDueYear" aria-label="Due date year">
+                        <option value="">Year</option>
+                      </select>
+                    </div>
+                    <div class="col-4">
+                      <label class="form-label small text-muted mb-1" for="newDueMonth">Month</label>
+                      <select class="form-select" id="newDueMonth" aria-label="Due date month" disabled>
+                        <option value="">Month</option>
+                      </select>
+                    </div>
+                    <div class="col-4">
+                      <label class="form-label small text-muted mb-1" for="newDueDay">Day</label>
+                      <select class="form-select" id="newDueDay" aria-label="Due date day" disabled>
+                        <option value="">Day</option>
+                      </select>
+                    </div>
+                  </div>
+                  <input type="hidden" id="newDueDate" />
+                  <div class="invalid-feedback d-block" id="newDueDateFeedback">Due date cannot be in the past.</div>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label small fw-semibold">Payment method</label>
@@ -353,6 +374,6 @@
     <script src="assets/js/admin-common.js"></script>
     <script src="assets/js/product-pricing.js?v=1"></script>
     <script src="assets/js/phone-validation.js?v=1"></script>
-    <script src="assets/js/admin-billing.js?v=9"></script>
+    <script src="assets/js/admin-billing.js?v=11"></script>
   </body>
 </html>
