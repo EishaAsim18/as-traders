@@ -169,48 +169,85 @@ function safeImageStemFromFile(file, sku) {
     .replace(/-+/g, "-");
 }
 
-function predictedUploadPath(sku, file) {
-  if (!file) return "/assets/images/products/";
-  const ext = String(file.name || "").match(/\.(jpe?g|png|webp|svg)$/i);
-  const suffix = ext ? ext[0].toLowerCase().replace("jpeg", ".jpg") : ".jpg";
-  const normalizedExt = suffix.startsWith(".") ? suffix : "." + suffix;
-  const stem = safeImageStemFromFile(file, sku);
-  return "/assets/images/products/" + stem + normalizedExt;
+function imageFileExtension(fileName) {
+  const match = String(fileName || "").match(/\.(jpe?g|png|webp|svg)$/i);
+  if (!match) return ".jpg";
+  if (/jpe?g/i.test(match[0])) return ".jpg";
+  return match[0].toLowerCase();
 }
 
-function setImagePathLabel(elementId, value) {
+function predictedUploadPath(sku, file) {
+  if (!file) return "/assets/images/products/";
+  const stem = safeImageStemFromFile(file, sku);
+  return "/assets/images/products/" + stem + imageFileExtension(file.name);
+}
+
+function setImagePathLabel(elementId, value, isPending) {
   const el = document.getElementById(elementId);
-  if (el) el.textContent = formatImagePathDisplay(value);
+  if (!el) return;
+  el.textContent = formatImagePathDisplay(value);
+  el.classList.toggle("product-image-path--new", !!isPending);
+}
+
+function setSelectedFileName(elementId, file) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  if (!file) {
+    el.textContent = "";
+    el.classList.add("d-none");
+    return;
+  }
+  el.textContent = "Selected: " + file.name;
+  el.classList.remove("d-none");
 }
 
 function updateEditImagePathDisplay() {
   const sku = document.getElementById("editSku").value.trim();
-  const currentPath =
-    (editingProduct && editingProduct.imageUrl) || "—";
+  const savedPath = (editingProduct && editingProduct.imageUrl) || "";
   const pathEl = document.getElementById("editImagePath");
   const noteEl = document.getElementById("editImagePathNote");
   if (!pathEl) return;
 
-  if (editImageFile && sku) {
+  if (editImageFile) {
     const nextPath = predictedUploadPath(sku, editImageFile);
     pathEl.textContent = nextPath;
+    pathEl.classList.add("product-image-path--new");
+    setSelectedFileName("editImageFileName", editImageFile);
     if (noteEl) {
-      noteEl.style.display = "block";
-      if (nextPath === currentPath) {
-        noteEl.textContent =
-          "New file selected — same path, image will replace the old file on Save.";
-      } else {
-        noteEl.textContent = "Path will update on Save.";
-      }
+      noteEl.classList.remove("d-none");
+      noteEl.textContent =
+        nextPath === savedPath
+          ? "New image selected — replaces current file on Save."
+          : "New path — stays until you pick another file or Save.";
     }
     return;
   }
 
-  pathEl.textContent = formatImagePathDisplay(currentPath);
+  pathEl.textContent = formatImagePathDisplay(savedPath) || "—";
+  pathEl.classList.remove("product-image-path--new");
+  setSelectedFileName("editImageFileName", null);
   if (noteEl) {
-    noteEl.style.display = "none";
+    noteEl.classList.add("d-none");
     noteEl.textContent = "";
   }
+}
+
+function updateNewImagePathDisplay() {
+  const sku = document.getElementById("newSku").value.trim();
+  const pathEl = document.getElementById("newImagePath");
+  if (!pathEl) return;
+
+  if (newImageFile) {
+    const nextPath = predictedUploadPath(sku, newImageFile);
+    pathEl.textContent = nextPath;
+    pathEl.classList.add("product-image-path--new");
+    setSelectedFileName("newImageFileName", newImageFile);
+    return;
+  }
+
+  pathEl.textContent = "/assets/images/products/";
+  pathEl.classList.remove("product-image-path--new");
+  setSelectedFileName("newImageFileName", null);
 }
 
 function previewFile(file, imgEl) {
@@ -224,7 +261,7 @@ function resetNewImagePreview() {
   newImageFile = null;
   document.getElementById("newImagePreview").src = "../assets/images/product-placeholder.svg";
   document.getElementById("newImageFile").value = "";
-  setImagePathLabel("newImagePath", "/assets/images/products/");
+  updateNewImagePathDisplay();
 }
 
 async function deleteProduct(product) {
@@ -364,10 +401,10 @@ async function saveEditProduct() {
   try {
     if (editImageFile) {
       imageUrl = await resolveImageUrlForProduct(sku, editImageFile);
-      setImagePathLabel("editImagePath", imageUrl);
       editingProduct.imageUrl = imageUrl;
       editImageFile = null;
       document.getElementById("editImageFile").value = "";
+      updateEditImagePathDisplay();
     }
   } catch (err) {
     showToast(err.message, "error");
@@ -395,14 +432,14 @@ async function saveEditProduct() {
   const saved = result.product || {};
   if (saved.imageUrl) {
     editingProduct.imageUrl = saved.imageUrl;
-    setImagePathLabel("editImagePath", saved.imageUrl);
+    updateEditImagePathDisplay();
     document.getElementById("editImagePreview").src = catalogImageSrc(
       saved.imageUrl,
       saved.updatedAt ? new Date(saved.updatedAt).getTime() : Date.now()
     );
     const noteEl = document.getElementById("editImagePathNote");
     if (noteEl) {
-      noteEl.style.display = "block";
+      noteEl.classList.remove("d-none");
       noteEl.textContent = "Saved — visible on customer shop.";
     }
   }
@@ -460,17 +497,12 @@ document.getElementById("newImageFile").addEventListener("change", function (e) 
   newImageFile = e.target.files[0] || null;
   if (newImageFile) {
     previewFile(newImageFile, document.getElementById("newImagePreview"));
-    setImagePathLabel(
-      "newImagePath",
-      predictedUploadPath(document.getElementById("newSku").value, newImageFile)
-    );
   }
+  updateNewImagePathDisplay();
 });
 
 document.getElementById("newSku").addEventListener("input", function () {
-  if (newImageFile) {
-    setImagePathLabel("newImagePath", predictedUploadPath(document.getElementById("newSku").value, newImageFile));
-  }
+  if (newImageFile) updateNewImagePathDisplay();
 });
 
 document.getElementById("editImageFile").addEventListener("change", function (e) {
