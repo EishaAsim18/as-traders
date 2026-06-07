@@ -536,6 +536,10 @@ function showCreateInvoiceFieldErrors(errors) {
 
 function validateCreateInvoiceForm() {
   syncDueDateFromSelectors();
+  const hiddenDue = document.getElementById("newDueDate");
+  if (hiddenDue && !hiddenDue.value) {
+    setDueDateSelectorsToToday();
+  }
   const errors = [];
   const customerName = document.getElementById("newCustomerName").value.trim();
   const phoneEl = document.getElementById("newCustomerPhone");
@@ -665,7 +669,7 @@ async function submitNewInvoice() {
       tax: 0,
       discount: check.bill.discount,
       paymentMethod: document.getElementById("newInvoicePaymentMethod").value,
-      dueDate: check.dueDate || undefined,
+      dueDate: check.dueDate,
       reduceStock: true,
     });
 

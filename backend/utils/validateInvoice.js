@@ -12,9 +12,15 @@ function trimStr(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function startOfToday() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 function validateDueDate(dueDate) {
   if (!dueDate) {
-    return { ok: true, value: undefined };
+    return { ok: true, value: startOfToday() };
   }
   const parsed = new Date(dueDate);
   if (Number.isNaN(parsed.getTime())) {
