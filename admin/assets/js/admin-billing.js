@@ -451,18 +451,25 @@ function syncDueDateFromSelectors() {
     year + "-" + String(month).padStart(2, "0") + "-" + String(day).padStart(2, "0");
 }
 
-function resetDueDateSelectors() {
+function setDueDateSelectorsToToday() {
   const dayEl = document.getElementById("newDueDay");
   const monthEl = document.getElementById("newDueMonth");
   const yearEl = document.getElementById("newDueYear");
-  const hidden = document.getElementById("newDueDate");
-  if (dayEl) dayEl.value = "";
-  if (monthEl) monthEl.value = "";
-  if (yearEl) yearEl.value = "";
-  if (hidden) hidden.value = "";
+  if (!dayEl || !monthEl || !yearEl) return;
+
+  const today = new Date();
+  yearEl.value = String(today.getFullYear());
+  monthEl.disabled = false;
+  monthEl.value = String(today.getMonth() + 1);
   fillDueDayOptions();
-  updateDueDateSelectStates();
+  dayEl.disabled = false;
+  dayEl.value = String(today.getDate());
+  syncDueDateFromSelectors();
   clearDueDateFieldErrors();
+}
+
+function resetDueDateSelectors() {
+  setDueDateSelectorsToToday();
 }
 
 function clearDueDateFieldErrors() {
