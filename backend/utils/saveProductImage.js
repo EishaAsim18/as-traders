@@ -19,7 +19,21 @@ function safeSku(sku) {
     .toLowerCase();
 }
 
-function saveProductImage(dataUrl, sku) {
+function safeImageStem(originalName, sku) {
+  const stem = String(originalName || "")
+    .replace(/\\/g, "/")
+    .split("/")
+    .pop()
+    .replace(/\.[^.]+$/, "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  return stem || safeSku(sku);
+}
+
+function saveProductImage(dataUrl, sku, originalFileName) {
   const match = String(dataUrl || "").match(/^data:(image\/[\w+.-]+);base64,(.+)$/);
   if (!match) {
     throw new Error("Invalid image. Choose a JPG, PNG, WebP, or SVG file.");
@@ -38,7 +52,7 @@ function saveProductImage(dataUrl, sku) {
 
   fs.mkdirSync(PRODUCTS_DIR, { recursive: true });
 
-  const fileName = safeSku(sku) + ext;
+  const fileName = safeImageStem(originalFileName, sku) + ext;
   const filePath = path.join(PRODUCTS_DIR, fileName);
   fs.writeFileSync(filePath, buffer);
 
@@ -56,7 +70,13 @@ function normalizeProductImageUrl(sku, imageUrl) {
   if (!sku || !String(sku).trim()) {
     throw new Error("SKU is required to save a product image");
   }
-  return saveProductImage(url, sku);
+  return saveProductImage(url, sku, null);
 }
 
-module.exports = { saveProductImage, safeSku, normalizeProductImageUrl, isDataImageUrl };
+module.exports = {
+  saveProductImage,
+  safeSku,
+  safeImageStem,
+  normalizeProductImageUrl,
+  isDataImageUrl,
+};

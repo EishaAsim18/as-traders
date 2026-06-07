@@ -149,19 +149,33 @@ function formatImagePathDisplay(imageUrl) {
   return url;
 }
 
+function safeImageStemFromFile(file, sku) {
+  const name = file && file.name ? file.name : "";
+  const stem = String(name)
+    .replace(/\\/g, "/")
+    .split("/")
+    .pop()
+    .replace(/\.[^.]+$/, "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  if (stem) return stem;
+  return String(sku || "product")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/-+/g, "-");
+}
+
 function predictedUploadPath(sku, file) {
-  if (!sku || !file) return "/assets/images/products/";
+  if (!file) return "/assets/images/products/";
   const ext = String(file.name || "").match(/\.(jpe?g|png|webp|svg)$/i);
-  const suffix = ext ? ext[0].toLowerCase().replace("jpeg", "jpg") : ".jpg";
-  return (
-    "/assets/images/products/" +
-    String(sku)
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9-]/g, "-")
-      .replace(/-+/g, "-") +
-    suffix
-  );
+  const suffix = ext ? ext[0].toLowerCase().replace("jpeg", ".jpg") : ".jpg";
+  const normalizedExt = suffix.startsWith(".") ? suffix : "." + suffix;
+  const stem = safeImageStemFromFile(file, sku);
+  return "/assets/images/products/" + stem + normalizedExt;
 }
 
 function setImagePathLabel(elementId, value) {

@@ -589,3 +589,17 @@ a.stat-card-link:hover {
     margin-left: 0;
   }
 }
+
+.product-image-upload .form-control[type="file"] {
+  margin-bottom: 0;
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}
+
+.product-image-upload .product-image-path {
+  color: var(--adm-accent);
+  background: var(--adm-accent-soft);
+  border-radius: 4px;
+  padding: 0.35rem 0.5rem;
+  margin-top: 0;
+}
