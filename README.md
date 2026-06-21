@@ -177,7 +177,7 @@ I designed and built the backend (Node.js/Express, MongoDB schema, JWT authentic
 | # | Name | Role |
 |---|---|---|
 | 1 | Saleha Khurram | Backend & API, Deployment |
-| 2 | Eisha Asim | Admin frontend |
+| 2 | Eisha Asim | Figma Design + Complete Frontend + Admin Backend |
 | 3 | Izzat Rehman | Customer frontend |
 | 4 | Sadia Noor | Database design support |
 | 5 | Rasba Mazhar | QA & integration |
