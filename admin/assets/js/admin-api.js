@@ -187,7 +187,11 @@ function fileToDataUrl(file) {
 
 async function uploadProductImage(sku, file) {
   const dataUrl = await fileToDataUrl(file);
-  return apiPost("/products/upload-image", { sku: sku, dataUrl: dataUrl });
+  return apiPost("/products/upload-image", {
+    sku: sku,
+    dataUrl: dataUrl,
+    fileName: file ? file.name : "",
+  });
 }
 
 async function apiPost(path, body) {

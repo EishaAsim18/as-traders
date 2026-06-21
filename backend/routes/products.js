@@ -13,7 +13,7 @@ router.use(requireAdmin);
 // POST /api/products/upload-image — save image file for catalog
 router.post("/upload-image", async (req, res) => {
   try {
-    const { sku, dataUrl } = req.body;
+    const { sku, dataUrl, fileName } = req.body;
     if (!sku || !String(sku).trim()) {
       return res.status(400).json({ message: "SKU is required to save the image" });
     }
@@ -21,7 +21,7 @@ router.post("/upload-image", async (req, res) => {
       return res.status(400).json({ message: "Choose an image file to upload" });
     }
 
-    const imageUrl = saveProductImage(dataUrl, sku);
+    const imageUrl = saveProductImage(dataUrl, sku, fileName);
     const skuNorm = String(sku).trim().toUpperCase();
     const product = await Product.findOne({ sku: skuNorm });
     if (product) {
