@@ -12,8 +12,7 @@
 
 > Demo admin/customer credentials are not published here. Request access for evaluation, or run the project locally using the setup instructions below with your own `.env` values.
 
-**GitHub repository:** https://github.com/salehakhuram/as-traders
-
+**GitHub repository:** https://github.com/EishaAsim18/as-traders
 ---
 
 ## Project Overview
